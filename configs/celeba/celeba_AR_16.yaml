@@ -1,0 +1,62 @@
+model:
+  base_learning_rate: 1.0e-6
+  max_epochs: 200
+  scheduler_params:
+    type: OneCycle
+    max_lr: 1.0e-4
+    pct_start: 0.02
+  target: taming.models.AR.TrecARModelOnline
+  params:
+    css: 16
+    transformer_config:
+      target: taming.modules.transformer.sandwich.GPT
+      params:
+        block_size: 1101  # = 1024 + 77
+        text_vbs: 49408
+        img_vbs: 1024
+        n_layer: 18
+        n_head: 8
+        n_embd: 768
+        embd_pdrop: 0.1
+        resid_pdrop: 0.1
+        attn_pdrop: 0.1
+        add_cross: False
+        full_head: True
+    # taming VQGAN CelebA
+    first_stage_config:
+      target: taming.models.vqgan.VQModel
+      params:
+        ckpt_path: /cache/pretrained/vqmodel/faces/last.ckpt
+        embed_dim: 256
+        n_embed: 1024
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1,1,2,2,4]
+          num_res_blocks: 2
+          attn_resolutions: [16]
+          dropout: 0.0
+        lossconfig:
+          target: third_party.losses.vqperceptual.DummyLoss
+
+data: #CelebA
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 16
+    num_workers: 8
+    train:
+      target: taming.data.celeba.CelebA
+      params:
+        split: train
+        root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/CelebA-HQ-img
+        meta_path: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/metadata.pkl
+    validation:
+      target: taming.data.celeba.CelebA
+      params:
+        split: test
+        root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/CelebA-HQ-img
+        meta_path: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/metadata.pkl

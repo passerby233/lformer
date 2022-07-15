@@ -1,0 +1,73 @@
+model:
+  base_learning_rate: 1.0e-6
+  max_epochs: 100
+  scheduler_params:
+    type: OneCycle
+    max_lr: 1.0e-4
+    pct_start: 0.02
+  target: taming.models.AR.TrecARModelOnline
+  params:
+    css: 32
+    transformer_config:
+      target: taming.modules.transformer.sandwich.GPT
+      params:
+        block_size: 1101  # = 1024 + 77
+        text_vbs: 49408
+        img_vbs: 1024
+        n_layer: 18
+        n_head: 8
+        n_embd: 1024
+        embd_pdrop: 0.1
+        resid_pdrop: 0.1
+        attn_pdrop: 0.1
+        add_cross: False
+        full_head: True
+    # taming VQGAN Openimages Shrinked to 2887
+    first_stage_config:
+      target: taming.models.vqgan.ShrinkVQ
+      params:
+        ckpt_path: /cache/pretrained/vqmodel/openimages/last.ckpt
+        mapping_path: /cache/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        kl_weight: 1.0e-08
+        embed_dim: 256
+        n_embed: 8192
+        monitor: val/rec_loss
+        temperature_scheduler_config:
+          target: third_party.scheduler.scheduler.LambdaWarmUpCosineScheduler
+          params:
+            warm_up_steps: 0
+            max_decay_steps: 1000001
+            lr_start: 0.9
+            lr_max: 0.9
+            lr_min: 1.0e-06
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1,1,2,4]
+          num_res_blocks: 2
+          attn_resolutions: [32]
+          dropout: 0.0
+        lossconfig:
+          target: third_party.losses.vqperceptual.DummyLoss
+
+data: #CC3M
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 5
+    num_workers: 8
+    train:
+      target: taming.data.cc3m.CC3M
+      params:
+        split: train
+        root: /cache/cc3m/
+        meta_path: /cache/cc3m/metadata_cc3m.pkl
+    validation:
+      target: taming.data.cc3m.CC3M
+      params:
+        split: test
+        root: /cache/cc3m/
+        meta_path: /cache/cc3m/metadata_cc3m.pkl

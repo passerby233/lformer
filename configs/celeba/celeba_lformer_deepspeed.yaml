@@ -1,0 +1,82 @@
+model:
+  base_learning_rate: 1.0e-6
+  max_steps: 20000
+  optimizer_params:
+    type: DeepSpeedCPUAdam
+  scheduler_params:
+    type: OneCycle
+    max_lr: 2.0e-4
+    total_steps: 20000
+    pct_start: 0.02
+  target: taming.models.crosslformer.CrossLformerLatent
+  params:
+    css: 16
+    w_layer: 12
+    transformer_config:
+      target: taming.modules.transformer.sandwich.GPT
+      params:
+        dim_cond: 512 # num of dimensions of condition hidden
+        block_size: 333
+        text_vbs: 0
+        img_vbs: 1024
+        n_layer: 24
+        n_head: 16
+        n_embd: 768
+        embd_pdrop: 0.1
+        resid_pdrop: 0.1
+        attn_pdrop: 0.1
+        add_cross: True
+        full_head: False
+        PBrelax: False
+    text_encoder_config:
+      target: taming.models.custom_clip.TextEncoder
+      params: 
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
+        freeze: True
+        
+    # taming VQGAN CelebA
+    first_stage_config:
+      target: taming.models.vqgan.VQModel
+      params:
+        ckpt_path: /cache/pretrained/vqmodel/faces/celeba_f16.ckpt
+        embed_dim: 256
+        n_embed: 1024
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1,1,2,2,4]
+          num_res_blocks: 2
+          attn_resolutions: [16]
+          dropout: 0.0
+        lossconfig:
+          target: third_party.losses.vqperceptual.DummyLoss
+
+data: #CelebA
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 32
+    num_workers: 8
+    train:
+      target: taming.data.celeba.CelebAFeature
+      params:
+        split: train
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
+        img_root: CelebA-HQ-img
+        meta: metadata.pkl
+        fea: feature_celeba_clip_train.pkl
+    validation:
+      target: taming.data.celeba.CelebAFeature
+      params:
+        split: test
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
+        img_root: CelebA-HQ-img
+        meta: metadata.pkl
+        fea: feature_celeba_clip_val.pkl

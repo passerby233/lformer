@@ -1,0 +1,96 @@
+data: # CUB VQGAN
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 12
+    num_workers: 8
+    train:
+      target: taming.data.cub.CUBFeature
+      params:
+        split: train
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        fea: feature_cub_clip_train.pkl
+        cache: train/304images.pkl
+    validation:
+      target: taming.data.cub.CUBFeature
+      params:
+        split: test
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        fea: feature_cub_clip_train.pkl
+        cache: train/304images.pkl
+
+data: # CUB VQVAE
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 12
+    num_workers: 8
+    train:
+      target: taming.data.cub.CUBFeature
+      params:
+        split: train
+        mean: [0.79093, 0.76271, 0.75340]
+        std: [0.30379, 0.32279, 0.32800]
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        fea: feature_cub_clip_train.pkl
+        cache: train/304images.pkl
+    validation:
+      target: taming.data.cub.CUBFeature
+      params:
+        split: test
+        mean: [0.79093, 0.76271, 0.75340]
+        std: [0.30379, 0.32279, 0.32800]
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        fea: feature_cub_clip_train.pkl
+        cache: train/304images.pkl
+
+
+data: #CelebA
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 16
+    num_workers: 8
+    train:
+      target: taming.data.celeba.CelebAFeature
+      params:
+        split: train
+        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
+        img_root: CelebA-HQ-img
+        meta: metadata.pkl
+        fea: feature_celeba_clip_train.pkl
+    validation:
+      target: taming.data.celeba.CelebAFeature
+      params:
+        split: test
+        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
+        img_root: CelebA-HQ-img
+        meta: metadata.pkl
+        fea: feature_celeba_clip_val.pkl
+
+data: #CC3M
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 4
+    num_workers: 8
+    train:
+      target: taming.data.cc3m.CC3M
+      params:
+        split: train
+        root: /cache/cc3m/
+        meta_path: /cache/cc3m/metadata_cc3m.pkl
+    validation:
+      target: taming.data.coco.COCO
+      params:
+        split: test
+        root: /cache/cc3m/val2017
+        meta_path: /cache/cc3m/metadata_coco_val.pkl

@@ -1,0 +1,64 @@
+    # cogview VQVAE 
+    first_stage_config:
+      target: taming.models.vqvae.VQVAE
+      params:
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/cogview_vqvae/vqvae_hard_biggerset_011.ckpt
+        channel: 512
+        stride: 6
+        embed_dim: 256
+        n_embed: 8192
+        n_res_block: 0
+        simple: True
+
+    # taming VQGAN Openimages Shrinked to 2887
+    first_stage_config:
+      target: taming.models.vqgan.ShrinkVQ
+      params:
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/last.ckpt
+        mapping_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        kl_weight: 1.0e-08
+        embed_dim: 256
+        n_embed: 8192
+        monitor: val/rec_loss
+        temperature_scheduler_config:
+          target: third_party.scheduler.scheduler.LambdaWarmUpCosineScheduler
+          params:
+            warm_up_steps: 0
+            max_decay_steps: 1000001
+            lr_start: 0.9
+            lr_max: 0.9
+            lr_min: 1.0e-06
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1,1,2,4]
+          num_res_blocks: 2
+          attn_resolutions: [32]
+          dropout: 0.0
+        lossconfig:
+          target: third_party.losses.vqperceptual.DummyLoss
+
+    # taming VQGAN CelebA
+    first_stage_config:
+      target: taming.models.vqgan.VQModel
+      params:
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/faces/last.ckpt
+        embed_dim: 256
+        n_embed: 1024
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1,1,2,2,4]
+          num_res_blocks: 2
+          attn_resolutions: [16]
+          dropout: 0.0
+        lossconfig:
+          target: third_party.losses.vqperceptual.DummyLoss
