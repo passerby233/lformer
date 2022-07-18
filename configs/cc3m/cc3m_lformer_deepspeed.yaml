@@ -1,11 +1,12 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_epochs: 50 # 50K steps budget
+  max_steps: 1000000 # 100K steps budget
   optimizer_params:
     type: DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
     max_lr: 2.0e-4
+    total_steps: 1000000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
@@ -67,7 +68,7 @@ model:
 data: #CC3M
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 12
+    batch_size: 6
     num_workers: 8
     train:
       target: taming.data.cc3m.CC3MFeature

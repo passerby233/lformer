@@ -1,16 +1,17 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_epochs: 200
+  max_steps: 500000
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
+    total_steps: 500000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
     css: 32
     w_layer: 12
     transformer_config:
-      target: taming.modules.transformer.linear.LinearGPT
+      target: taming.modules.transformer.sandwich.GPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
         block_size: 1024
@@ -65,7 +66,7 @@ model:
 data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 3
+    batch_size: 5
     num_workers: 8
     train:
       target: taming.data.cub.CUBFeature
