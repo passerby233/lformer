@@ -29,6 +29,7 @@ model:
       target: taming.models.custom_clip.TextEncoder
       params: 
         ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
+        freeze: True
         
 
     first_stage_config:
@@ -65,7 +66,7 @@ model:
 data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 5
+    batch_size: 1
     num_workers: 8
     train:
       target: taming.data.cub.CUBFeature

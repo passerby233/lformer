@@ -1,22 +1,22 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 20000
-  optimizer_params:
-    type: DeepSpeedCPUAdam
+  max_steps: 60000
+#  optimizer_params:
+#    type: DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
-    max_lr: 2.0e-4
-    total_steps: 20000
+    max_lr: 1.0e-4
+    total_steps: 60000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
-    css: 16
+    css: 32
     w_layer: 12
     transformer_config:
       target: taming.modules.transformer.sandwich.GPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
-        block_size: 333
+        block_size: 1024
         text_vbs: 0
         img_vbs: 1024
         n_layer: 24
@@ -28,6 +28,7 @@ model:
         add_cross: True
         full_head: False
         PBrelax: False
+        checkpoint: 24
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
@@ -38,7 +39,7 @@ model:
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /cache/pretrained/vqmodel/faces/celeba_f16.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/faces/celeba_f8.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:
@@ -48,9 +49,9 @@ model:
           in_channels: 3
           out_ch: 3
           ch: 128
-          ch_mult: [1,1,2,2,4]
+          ch_mult: [1,1,2,4]
           num_res_blocks: 2
-          attn_resolutions: [16]
+          attn_resolutions: [32]
           dropout: 0.0
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
@@ -58,7 +59,7 @@ model:
 data: #CelebA
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 32
+    batch_size: 16
     num_workers: 8
     train:
       target: taming.data.celeba.CelebAFeature

@@ -68,7 +68,7 @@ class Lformer(GenModel):
         batch_size = Ltoken.shape[0]
         pad_idx = (torch.ones(batch_size, 1)*self.pad_id).to(Ltoken)
         padded = torch.empty((batch_size, 0), dtype=Ltoken.dtype, device=Ltoken.device)
-        for t in range(self.css-1):
+        for t in range(css-1):
             padded = torch.cat((padded, pad_idx, Ltoken[:, t**2:(t+1)**2], pad_idx), dim=1)
         return padded
 
@@ -147,7 +147,7 @@ class Lformer(GenModel):
             return self.to_rs_order(Ltoken)
 
     @torch.no_grad()
-    def log_images(self, batch, temperature=1.0, top_k=None, top_p=0.9, **kwargs):
+    def log_images(self, batch, top_k=None, top_p=0.9, temperature=1.0,  **kwargs):
         log = dict()
         text_idx, _, img_idx, _ = self.get_input(batch)
         # det sample
@@ -225,17 +225,35 @@ class Lformer(GenModel):
         return int(sqrt(token_idx.shape[-1]))
 
     def crop_token(self, rs_token, crop_size):
+        # input a rs_order token, return a cropped Ltoken
         css = self.get_css(rs_token)
         assert crop_size <= css
         L_token = self.to_L_order(rs_token, css)[:, :crop_size**2]
         return L_token
     
     def decode_cropped_to_img(self, cropped):
+        # pad cropped Ltoken to full Ltoken and decode to image
         css = self.get_css(cropped)
         padded_cropped_L = F.pad(cropped, (0, self.css**2-css**2))
         padded_cropped_rs = self.to_rs_order(padded_cropped_L)
         padded_cropped_img = self.decode_to_img(padded_cropped_rs)
         return padded_cropped_img
+
+    def repaint(self, text_idx, Ltoken, target_css, top_k=None, top_p=0.9, temperature=1.0):
+        # infer from Ltoken of [cur_css x cur_css] to [target_css, target_css]
+        # with condiction text_idx
+        cur_css = self.get_css(Ltoken)
+        padded = self.pad_Ltoken(Ltoken, cur_css+1)
+        text_feature, text_hidden = self.text_encoder(text_idx)
+        pad_idx = (torch.ones(Ltoken.shape[0], 1)*self.pad_id).to(text_idx)
+        for t in range(cur_css, target_css):
+            pred_ids, _ = self.infer_single_step(text_feature, text_hidden, padded, t, 
+                                                top_k=top_k, top_p=top_p, temperature=temperature)
+            Ltoken = torch.cat((Ltoken, pred_ids), dim=1)
+            if t < target_css: # No need to cat at last step
+                padded = torch.cat((padded, pad_idx, pred_ids, pad_idx), dim=1)
+        return Ltoken
+
 
 class CrossLformer(Lformer):
     def __init__(self,
@@ -272,38 +290,6 @@ class CrossLformer(Lformer):
         return logits, None
 
 
-class SparseLformer(Lformer):
-    def __init__(self,
-                 css,
-                 transformer_config,
-                 text_encoder_config,
-                 first_stage_config,
-                 pkeep=1.0,
-                 ckpt_path=None,
-                 ignore_keys=[],
-                 ):
-        super().__init__(css,
-                         transformer_config,
-                         text_encoder_config,
-                         first_stage_config,
-                         pkeep)
-
-        hs_cond = transformer_config.params.dim_cond
-        hs_trans = transformer_config.params.n_embd
-        self.linear_ctx = nn.Linear(hs_cond, hs_trans)
-
-        self.register_buffer("pos_ids", torch.arange(self.css**2).unsqueeze(0))
-        if ckpt_path is not None:
-            self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
-
-    def forward(self, text_feature, text_hidden, padded):
-        seq_len = padded.shape[1] + 1 # add one for text_feature
-        pos_ids = self.pos_ids[:, :seq_len]
-        context = self.linear_ctx(text_feature) # [B,H]
-        logits = self.transformer(padded, None, pos_ids, 
-            embeddings=context.unsqueeze(1), eh=text_hidden)
-        return logits, None
-     
 class CrossLformerLatent(Lformer):
     def __init__(self,
                  css,
@@ -393,31 +379,3 @@ class CrossLformerLatent(Lformer):
         self.log("train/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log("train/KLD", KLD, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         return loss
-
-# Deprecated, using extracted tokens leads to degeneration 
-class CrossLformerOffline(CrossLformer):
-    def __init__(self,
-                 css,
-                 w_layer,
-                 transformer_config,
-                 text_encoder_config,
-                 first_stage_config,
-                 ckpt_path=None,
-                 ignore_keys=[],
-                 pkeep=1.0
-                 ):
-        super().__init__(css,
-                         w_layer,
-                         transformer_config,
-                         text_encoder_config,
-                         first_stage_config,
-                         ckpt_path,
-                         ignore_keys,
-                         pkeep)
-
-    def get_input(self, batch):
-        text_idx, Ltoken, img_idx =  batch['text_idx'], batch['Ltoken'], batch['img_idx']
-        img_feature = batch['feature']
-        if self.pkeep < 1 and self.training:
-            img_idx = self._add_noise(img_idx, self.pkeep)
-        return text_idx, Ltoken, img_idx, img_feature

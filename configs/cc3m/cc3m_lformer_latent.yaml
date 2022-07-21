@@ -16,19 +16,21 @@ model:
         block_size: 1024
         text_vbs: 0
         img_vbs: 2887
-        n_layer: 18
-        n_head: 12
-        n_embd: 768
+        n_layer: 24
+        n_head: 16
+        n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         full_head: False
         add_cross: True # Add cross attention
         PBrelax: False # To keep stable for >24 layers if on
+        checkpoint: 24
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
         ckpt_path: /cache/pretrained/clip/ViT-B-16.pt
+        freeze: True
         
     # taming VQGAN Openimages Shrinked to 2887
     first_stage_config:

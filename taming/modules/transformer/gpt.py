@@ -7,12 +7,6 @@ from torch.nn import functional as F
 
 logger = logging.getLogger(__name__)
 
-class LayerNorm(nn.LayerNorm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-    def forward(self, x):
-        return super().forward(x / (x.abs().max().detach()/8))
-
 class GPTConfig:
     """ base GPT config, params common to all GPT versions """
     embd_pdrop = 0.1
@@ -123,31 +117,37 @@ class Block(nn.Module):
 
 class GPT(nn.Module):
     """  the full GPT language model, with a context size of block_size """
-    def __init__(self, text_vbs, img_vbs, block_size, n_layer=12, n_head=8, n_embd=256,
-                 embd_pdrop=0., resid_pdrop=0., attn_pdrop=0., add_cross=False):
+    def __init__(self, text_vbs, img_vbs, block_size, 
+                 n_layer=12, n_head=8, n_embd=256, dim_cond=512, 
+                 embd_pdrop=0., resid_pdrop=0., attn_pdrop=0., 
+                 add_cross=False, full_head=False, PBrelax=False):
         super().__init__()
         config = GPTConfig(vocab_size=text_vbs+img_vbs, block_size=block_size,
-                           embd_pdrop=embd_pdrop, resid_pdrop=resid_pdrop, attn_pdrop=attn_pdrop,
                            n_layer=n_layer, n_head=n_head, n_embd=n_embd, 
-                           add_cross=add_cross, PBrelax=False)
+                           embd_pdrop=embd_pdrop, resid_pdrop=resid_pdrop, attn_pdrop=attn_pdrop,
+                           add_cross=add_cross, full_head=full_head, PBrelax=PBrelax)
         # input embedding stem
         if add_cross:
-            self.eh_proj = nn.Linear(512, n_embd)
-        self.ctx_proj = nn.Linear(512, n_embd) # 512 for CLIP
+            self.eh_proj = nn.Linear(dim_cond, n_embd)
+        self.ctx_proj = nn.Linear(dim_cond, n_embd) # 512 for CLIP
         self.tok_emb = nn.Embedding(config.vocab_size+1, config.n_embd) # 1 for pad
         self.pos_emb = nn.Embedding(config.block_size, config.n_embd)
         self.drop = nn.Dropout(config.embd_pdrop)
         # transformer
-        self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
+        self.blocks = self.get_blocks(config)
         # decoder head
+        head_size = text_vbs + img_vbs if full_head else img_vbs
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.head = nn.Linear(config.n_embd, img_vbs, bias=False)
+        self.head = nn.Linear(config.n_embd, head_size, bias=False)
         self.apply(self._init_weights)
+
         self.block_size = config.block_size
         self.add_cross = add_cross
         self.config = config
         logger.info("number of parameters: %e", sum(p.numel() for p in self.parameters()))
 
+    def get_blocks(self, config):
+        return nn.ModuleList([Block(config) for _ in range(config.n_layer)])
     def get_block_size(self):
         return self.block_size
 

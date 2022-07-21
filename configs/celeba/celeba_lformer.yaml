@@ -12,7 +12,7 @@ model:
       target: taming.modules.transformer.sandwich.GPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
-        block_size: 333  # = 1024 + 77
+        block_size: 256  # = 1024 + 77
         text_vbs: 0
         img_vbs: 1024
         n_layer: 18

@@ -1,6 +1,8 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
   max_steps: 500000
+#  optimizer_params:
+#    type: DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
@@ -11,14 +13,14 @@ model:
     css: 32
     w_layer: 12
     transformer_config:
-      target: taming.modules.transformer.sandwich.GPT
+      target: taming.modules.transformer.sparse.SparseGPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
         block_size: 1024
         text_vbs: 0
         img_vbs: 2887
-        n_layer: 18
-        n_head: 12
+        n_layer: 24
+        n_head: 16
         n_embd: 768
         embd_pdrop: 0.1
         resid_pdrop: 0.1
@@ -26,11 +28,12 @@ model:
         full_head: False
         add_cross: True
         PBrelax: False
+        checkpoint: 24
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
         ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
-        
+        freeze: True
 
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ

@@ -6,7 +6,7 @@ import argparse, datetime, glob
 from omegaconf import OmegaConf
 from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
-from pytorch_lightning.strategies import DeepSpeedStrategy
+from pytorch_lightning.strategies import DeepSpeedStrategy, DDPStrategy
 
 from util import get_default_cfgs, get_parser, instantiate_from_config
 
@@ -95,24 +95,26 @@ if __name__ == "__main__":
         # data and model
         data = instantiate_from_config(config.data)
         model = instantiate_from_config(config.model)
-        
+        if 'SparseGPT' in config.model.target:
+            model = model.half()
+
         # trainer and callbacks
         trainer_kwargs = dict()
         logger_cfg, callbacks_cfg = get_default_cfgs(
             lightning_config, opt, nowname, now,
             logdir, ckptdir, cfgdir, config)
         trainer_kwargs['logger'] = instantiate_from_config(logger_cfg)
-        trainer_kwargs['enable_checkpointing'] = True
         trainer_kwargs['callbacks'] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
+        trainer_kwargs['enable_checkpointing'] = True
         if opt.deepspeed > 0:
             trainer_kwargs['strategy'] = DeepSpeedStrategy(
-                stage=opt.deepspeed, offload_optimizer=True, 
+                stage=opt.deepspeed, offload_optimizer=opt.deepspeed>1,
                 offload_parameters= opt.deepspeed==3,
                 pin_memory= opt.deepspeed==3,
                 allgather_bucket_size=5e8, reduce_bucket_size=5e8, 
                 logging_batch_size_per_gpu=config.data.params.batch_size)
         else:
-            trainer_kwargs['strategy'] = 'ddp'
+            trainer_kwargs['strategy'] = DDPStrategy(find_unused_parameters=False)
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
         
         # configure learning rate
