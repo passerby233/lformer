@@ -105,7 +105,8 @@ def main():
     data.setup()
 
     extract_and_save(model, data, args, args.mode)
-    if args.cc3m:
+    # cc3m needs dataupload, thus defaultly extract training set
+    if args.cc3m: 
         extract_and_save(model, data, args, 'train')
 
 if __name__ == "__main__":

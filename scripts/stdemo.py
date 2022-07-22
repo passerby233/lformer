@@ -1,17 +1,17 @@
-import argparse, os, sys, glob, math, time
-dirname, filename = os.path.split(os.path.abspath(__file__))
+import argparse, os, sys, math, time
+dirname = os.path.dirname(__file__)
 os.chdir(os.path.join(dirname, os.path.pardir))
-sys.path.append(os.getcwd())
+sys.path.insert(0, os.getcwd())
 import torch
 import numpy as np
 from omegaconf import OmegaConf
 from PIL import Image
-from main import instantiate_from_config
 from torch.utils.data.dataloader import default_collate
 import streamlit as st
 from streamlit import caching
 
-from sample_utils import SamplerWithCLIP
+from util import instantiate_from_config
+from sample_utils import SamplerWithCLIP, get_config, get_data, convert_ckpt
 from taming.models.custom_clip import clip_transform, VisualEncoder
 
 rescale = lambda x: (x + 1.) / 2.
@@ -81,7 +81,7 @@ def run_conditional(sampler, dsets):
     temperature = st.sidebar.number_input("Temperature", value=1.0)
     top_k = st.sidebar.number_input("Top k", value=100)
     top_p = st.sidebar.number_input("Top p", value=0.9)
-    candidate = st.sidebar.number_input("candidate", value=64)
+    candidate = st.sidebar.number_input("candidate", value=32)
     fbs = st.sidebar.number_input("forward_batch_size", value=32)
     num_out = st.sidebar.number_input("num_out", value=4)
     #greedy = st.checkbox("Greedy", value=False)
@@ -171,22 +171,6 @@ def load_model_from_config(config, sd, gpu=True, eval_mode=True):
         model.eval()
     return {"model": model}
 
-def get_data(config):
-    # get data
-    data = instantiate_from_config(config.data)
-    data.setup()
-    return data
-
-def convert_ckpt(state_dict):
-    import re
-    pattern = re.compile(r'module.(.*)')
-    for key in list(state_dict.keys()):
-        res = pattern.match(key)
-        if res:
-            new_key = res.group(1)
-            state_dict[new_key] = state_dict[key]
-            del state_dict[key]
-    return state_dict
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_model_and_dset(config, ckpt, gpu, eval_mode):
@@ -213,42 +197,9 @@ def load_model_and_dset(config, ckpt, gpu, eval_mode):
 
 
 if __name__ == "__main__":
-    sys.path.insert(0, os.getcwd())
-
     parser = get_parser()
     opt, unknown = parser.parse_known_args()
-
-    ckpt = None
-    if opt.resume:
-        if not os.path.exists(opt.resume):
-            raise ValueError("Cannot find {}".format(opt.resume))
-        if os.path.isfile(opt.resume):
-            paths = opt.resume.split("/")
-            try:
-                idx = len(paths)-paths[::-1].index("logs")+1
-            except ValueError:
-                idx = -2 # take a guess: path/to/logdir/checkpoints/model.ckpt
-            logdir = "/".join(paths[:idx])
-            ckpt = opt.resume
-        else:
-            assert os.path.isdir(opt.resume), opt.resume
-            logdir = opt.resume.rstrip("/")
-            ckpt = os.path.join(logdir, "checkpoints", "last.ckpt")
-        base_configs = sorted(glob.glob(os.path.join(logdir, "configs/*-project.yaml")))
-        opt.base = base_configs+opt.base
-
-    if opt.config:
-        if type(opt.config) == str:
-            opt.base = [opt.config]
-        else:
-            opt.base = [opt.base[-1]]
-
-    configs = [OmegaConf.load(cfg) for cfg in opt.base]
-    cli = OmegaConf.from_dotlist(unknown)
-    if opt.ignore_base_data:
-        for config in configs:
-            if hasattr(config, "data"): del config["data"]
-    config = OmegaConf.merge(*configs, cli)
+    config, ckpt = get_config(opt, unknown)
 
     st.sidebar.text(ckpt)
     gs = st.sidebar.empty()

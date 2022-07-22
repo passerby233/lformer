@@ -149,3 +149,19 @@ def get_config(opt, unknown):
     config = OmegaConf.merge(*configs, cli)
     return config, ckpt
 
+def get_data(config):
+    # get data
+    data = instantiate_from_config(config.data)
+    data.setup()
+    return data
+
+def convert_ckpt(state_dict):
+    import re
+    pattern = re.compile(r'module.(.*)')
+    for key in list(state_dict.keys()):
+        res = pattern.match(key)
+        if res:
+            new_key = res.group(1)
+            state_dict[new_key] = state_dict[key]
+            del state_dict[key]
+    return state_dict

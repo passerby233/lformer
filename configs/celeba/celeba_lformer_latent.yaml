@@ -1,10 +1,10 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 60000
+  max_steps: 30000
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 60000
+    total_steps: 30000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
@@ -19,14 +19,14 @@ model:
         img_vbs: 1024
         n_layer: 24
         n_head: 16
-        n_embd: 768
+        n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         add_cross: True
         full_head: False
         PBrelax: False
-        checkpoint: 20
+        checkpoint: 22
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 

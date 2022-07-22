@@ -1,4 +1,5 @@
 from faulthandler import disable
+from matplotlib.pyplot import text
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -65,6 +66,7 @@ class Lformer(GenModel):
 
     def pad_Ltoken(self, Ltoken, css=None):
         css = self.css if css is None else css
+        assert css > 0
         batch_size = Ltoken.shape[0]
         pad_idx = (torch.ones(batch_size, 1)*self.pad_id).to(Ltoken)
         padded = torch.empty((batch_size, 0), dtype=Ltoken.dtype, device=Ltoken.device)
@@ -254,6 +256,38 @@ class Lformer(GenModel):
                 padded = torch.cat((padded, pad_idx, pred_ids, pad_idx), dim=1)
         return Ltoken
 
+    def inpaint(self, text_idx, img_idx, x1, y1, x2, y2,
+                top_k=None, top_p=0.9, temperature=1.0):
+        assert x1 < x2 and y1 < y2
+        # prepare inpaint mask
+        css = self.get_css(img_idx)
+        Ltoken = self.to_L_order(img_idx, css)
+        mask = torch.zeros(css, css, dtype=Ltoken.dtype, device=Ltoken.device)
+        mask[x1:x2, y1:y2] = 1
+        L_mask = self.to_L_order(mask.reshape(1, -1))
+        css_in, css_out = max(x1, y1), max(x2, y2)
+
+        # crop the max Ltoken
+        new_Ltoken =  Ltoken[:, :css_in**2]
+        if css_in == 0:
+            padded = torch.empty((text_idx.shape[0], 0), dtype=torch.long, device=text_idx.device)
+        else:
+            padded = self.pad_Ltoken(new_Ltoken, css_in+1)
+
+        pad_idx = (torch.ones(Ltoken.shape[0], 1)*self.pad_id).to(img_idx)
+        text_feature, text_hidden = self.text_encoder(text_idx)
+        for t in range(css_in, css_out):
+            pred_ids, _ = self.infer_single_step(text_feature, text_hidden, padded, t, 
+                                                top_k=top_k, top_p=top_p, temperature=temperature)
+            pred_mask = L_mask[:, t**2:(t+1)**2]
+            L_raw = Ltoken[:, t**2:(t+1)**2]
+            pred_ids = pred_ids * pred_mask + L_raw * (1 - pred_mask)
+            new_Ltoken = torch.cat((new_Ltoken, pred_ids), dim=1)
+            if t < css_out: # No need to cat at last step
+                padded = torch.cat((padded, pad_idx, pred_ids, pad_idx), dim=1)
+        # cat the residual
+        new_Ltoken = torch.cat((new_Ltoken, Ltoken[:, css_out**2:]), dim=1)
+        return self.to_rs_order(new_Ltoken)
 
 class CrossLformer(Lformer):
     def __init__(self,
