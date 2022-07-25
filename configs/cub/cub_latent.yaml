@@ -1,12 +1,9 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_steps: 1000000 # 100K steps budget
-#  optimizer_params:
-#    type: DeepSpeedCPUAdam
+  max_epochs: 200
   scheduler_params:
     type: OneCycle
-    max_lr: 2.0e-4
-    total_steps: 1000000
+    max_lr: 1.0e-4
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
@@ -19,28 +16,27 @@ model:
         block_size: 1024
         text_vbs: 0
         img_vbs: 2887
-        n_layer: 30
+        n_layer: 24
         n_head: 16
         n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         full_head: False
-        add_cross: True # Add cross attention
-        PBrelax: False # To keep stable for >24 layers if on
-        checkpoint: 24
+        add_cross: True
+        PBrelax: False
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /cache/pretrained/clip/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
         freeze: True
         
-    # taming VQGAN Openimages Shrinked to 2887
+
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
       params:
-        ckpt_path: /cache/pretrained/vqmodel/openimages/last.ckpt
-        mapping_path: /cache/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/last.ckpt
+        mapping_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
         kl_weight: 1.0e-08
         embed_dim: 256
         n_embed: 8192
@@ -67,23 +63,28 @@ model:
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
 
-data: #CC3M
+data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 6
+    batch_size: 1
     num_workers: 8
     train:
-      target: taming.data.cc3m.CC3MFeature
+      target: taming.data.cub.CUBFeature
       params:
         split: train
-        data_root: /cache/cc3m/
-        meta: metadata_cc3m.pkl
-        fea: feature_cc3m_clip_train.pkl
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        fea: feature_cub_clip_train.pkl
+        cache: train/304images.pkl
     validation:
-      target: taming.data.coco.COCOFeature
+      target: taming.data.cub.CUBFeature
       params:
         split: test
-        data_root: /cache/cc3m/
-        img_root: val2017
-        meta: metadata_coco_val.pkl
-        fea: feature_cc3m_clip_val.pkl
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        fea: feature_cub_clip_train.pkl
+        cache: train/304images.pkl

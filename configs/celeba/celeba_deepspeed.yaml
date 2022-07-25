@@ -1,8 +1,8 @@
 model:
   base_learning_rate: 1.0e-6
   max_steps: 30000
-#  optimizer_params:
-#    type: DeepSpeedCPUAdam
+  optimizer_params:
+    type: Adafactor  #DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
@@ -13,7 +13,7 @@ model:
     css: 32
     w_layer: 12
     transformer_config:
-      target: taming.modules.transformer.sandwich.GPT
+      target: taming.modules.transformer.sparse.SparseGPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
         block_size: 1024
@@ -28,7 +28,7 @@ model:
         add_cross: True
         full_head: False
         PBrelax: False
-        checkpoint: 24
+        checkpoint: 18
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
@@ -59,7 +59,7 @@ model:
 data: #CelebA
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 16
+    batch_size: 32
     num_workers: 8
     train:
       target: taming.data.celeba.CelebAFeature

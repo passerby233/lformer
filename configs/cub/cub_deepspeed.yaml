@@ -1,12 +1,12 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_steps: 500000
-#  optimizer_params:
-#    type: DeepSpeedCPUAdam
+  max_steps: 30000
+  optimizer_params:
+    type: Adafactor
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 500000
+    total_steps: 30000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
@@ -21,7 +21,7 @@ model:
         img_vbs: 2887
         n_layer: 24
         n_head: 16
-        n_embd: 768
+        n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
@@ -69,7 +69,7 @@ model:
 data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 5
+    batch_size: 32
     num_workers: 8
     train:
       target: taming.data.cub.CUBFeature

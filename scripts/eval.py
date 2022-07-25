@@ -38,7 +38,8 @@ if __name__ == "__main__":
     config, ckpt = get_config(opt, unknown)
     
     # load data and model
-    dsets = get_data(config) 
+    data = get_data(config) 
+    valset = data['validation']
 
     ckpt_dict = torch.load(ckpt, map_location="cpu")
     if "state_dict" in ckpt_dict:
@@ -57,6 +58,10 @@ if __name__ == "__main__":
     sampler = SamplerWithCLIP(model, ranker, clip_transform)
 
     # prepare for evaluation
+    sample_size = 64
+    forward_size = 32
     _ = torch.manual_seed(23)
-    fid = FrechetInceptionDistance(feature=2048)
-
+    fid = FrechetInceptionDistance(feature=2048).cuda()
+    for batch in valset:
+        text_idx = batch['text_idx'].cuda()
+        image_sample = sampler(text_idx, 1, sample_size, forward_size)
