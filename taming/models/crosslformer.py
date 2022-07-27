@@ -108,11 +108,6 @@ class Lformer(GenModel):
         probs = F.softmax(logits, dim=-1)
         if greedy:
             probs, pred_ids = torch.topk(probs, k=1, dim=-1)
-        elif top_k is not None:
-            B, L, V = probs.shape
-            pred_ids = probs.view(-1, V).multinomial(1)
-            pred_ids = pred_ids.reshape(B, L, 1) #[B, L]
-            probs = probs.gather(2, pred_ids) # [B, L ,1]]
         elif top_p is not None:
             B, L, V = probs.shape
             sorted_probs, sorted_idx = torch.sort(probs, descending=True)
@@ -124,6 +119,11 @@ class Lformer(GenModel):
             sorted_idx_indice = sorted_idx_indice.reshape(B, L, 1)
             pred_ids = sorted_idx.gather(2, sorted_idx_indice)
             probs = probs.gather(2, pred_ids)
+        elif top_k is not None:
+            B, L, V = probs.shape
+            pred_ids = probs.view(-1, V).multinomial(1)
+            pred_ids = pred_ids.reshape(B, L, 1) #[B, L]
+            probs = probs.gather(2, pred_ids) # [B, L ,1]]
         pred_ids, probs = pred_ids.squeeze(-1), probs.squeeze(-1)
         return pred_ids, probs
 

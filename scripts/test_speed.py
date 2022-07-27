@@ -1,15 +1,15 @@
 import os, sys, time
-dirname, filename = os.path.split(os.path.abspath(__file__))
+dirname = os.path.dirname(__file__)
 os.chdir(os.path.join(dirname, os.path.pardir))
 sys.path.append(os.getcwd())
 from torch.utils.data import DataLoader
 from PIL import Image
 
 from sample_utils import get_parser, get_config, load_model_and_data
-from sample_utils import de_normalize, sample, make_grid
+from sample_utils import sample, make_grid
 
 if __name__ == "__main__":
-    out_path = "/home/ljc/lformer/outputs/"
+    out_path = "/mnt/lijiacheng/logs/samplep/"
     
     parser = get_parser()
     opt, unknown = parser.parse_known_args()
@@ -24,17 +24,21 @@ if __name__ == "__main__":
         if opt.gpu:
             text_idx = text_idx.cuda()
         start_time = time.time()
-        img_t = sample(model, text_idx, sample=True, top_k=100)
+        img_t = sample(model, text_idx, top_k=100, top_p=0.9)
         time_used = time.time() - start_time
         print(f"batch_{i} uses time: {time_used}s")
-
+        
         img_grid = make_grid(img_t)
         img_path = os.path.join(out_path, f"imgs_batch_{i}.png")
         Image.fromarray(img_grid).save(img_path)
 
-        text_grid = make_grid(de_normalize(model.textidx_to_img(text_idx)))
-        text_path = os.path.join(out_path, f"text_batch_{i}.png")
-        Image.fromarray(text_grid).save(text_path)
-
+        # Save text
+        text_idx = text_idx.detach().cpu().numpy()
+        text_path = os.path.join(out_path, f"text_batch_{i}.txt")
+        with open(text_path, 'w') as f:
+            for text_id in text_idx:
+                text = model.tokenizer.decode(text_id)
+                f.write(text+'\n')
+        
         if i>5:
             break

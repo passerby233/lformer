@@ -137,8 +137,8 @@ def main():
         download("s3://bucket-3947/lijiacheng/pretrained", "/cache/pretrained")
         print(os.listdir(target_dir))
 
-    # wait for all node sync
-    enter_node_barrier(args)
+        # wait for all node sync
+        enter_node_barrier(args)
 
     # Running script
     cmd = f"python {args.main}"

@@ -34,14 +34,6 @@ class ARModel(GenModel):
 
     def get_att_mask(self, css=None): 
         css = self.css if css is None else css
-        seq_len = css**2
-        """
-        img_mask = torch.tril(torch.ones((seq_len, seq_len)))
-        partial_mask_zeros = torch.zeros((77, seq_len)).to(img_mask)
-        partial_mask_ones = torch.ones(77+seq_len, 77).to(img_mask) 
-        att_mask = torch.cat((partial_mask_zeros, img_mask), dim=0) 
-        att_mask = torch.cat((partial_mask_ones, att_mask), dim=1) 
-        """
         att_mask = torch.tril(torch.ones(self.block_size, self.block_size))
         return att_mask.unsqueeze(0)
 
@@ -64,7 +56,8 @@ class ARModel(GenModel):
         return logits
 
     @torch.no_grad()
-    def sample(self, text_idx, temperature=1.0, sample=False, top_k=None, half=None):
+    def sample(self, text_idx, top_k=None, top_p=0.9, temperature=1.0, 
+               greedy=False, half=None):
         block_size = self.transformer.get_block_size()
         assert not self.transformer.training
         steps = self.css**2//2 if half is not None else self.css**2
@@ -83,12 +76,21 @@ class ARModel(GenModel):
             if top_k is not None:
                 logits = self.top_k_logits(logits, top_k)
             # apply softmax to convert to probabilities
-            probs = F.softmax(logits, dim=-1)
+            probs = F.softmax(logits, dim=-1) #[B, V]
             # sample from the distribution or take the most likely
-            if sample:
-                ix = torch.multinomial(probs, num_samples=1)
-            else:
+            if greedy:
                 _, ix = torch.topk(probs, k=1, dim=-1)
+            elif top_p is not None:
+                sorted_probs, sorted_idx = torch.sort(probs, descending=True)
+                cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+                sorted_indices_to_remove = cumulative_probs > top_p   #[B,V]
+                sorted_indices_to_remove[:, 0] = False # to ensure at least one token
+                sorted_probs[sorted_indices_to_remove] = 0
+                sorted_idx_indice = sorted_probs.multinomial(1)
+                ix = sorted_idx.gather(1, sorted_idx_indice)
+            elif top_k is not None:
+                ix = probs.multinomial(1)
+                
             # append to the sequence and continue
             x = torch.cat((x, ix), dim=1)
         # cut off conditioning
@@ -96,18 +98,18 @@ class ARModel(GenModel):
         return x
 
     @torch.no_grad()
-    def log_images(self, batch, temperature=1.0, top_k=100, lr_interface=False, **kwargs):
+    def log_images(self, batch, top_k=None, top_p=0.9, temperature=1.0,  **kwargs):
         log = dict()
         text_idx, img_idx  = self.get_input(batch)
-        
+
         # half sample
-        half_sample = self.sample(text_idx, sample=True, top_k=top_k, 
-            half=img_idx[:,:img_idx.shape[1]//2])
+        half_sample = self.sample(text_idx, top_k=top_k, top_p=top_p, temperature=temperature,
+                                    half=img_idx[:,:img_idx.shape[1]//2])
         x_half = self.decode_to_img(half_sample)
         log["half"] = x_half
-        
+
         # det sample
-        index_sample = self.sample(text_idx, sample=True, top_k=top_k)
+        index_sample = self.sample(text_idx, top_k=top_k, top_p=top_p, temperature=temperature,)
         x_sample = self.decode_to_img(index_sample)
         log["Pred"] = x_sample
 
@@ -140,22 +142,6 @@ class TrecARModel(ARModel):
         target_idx = torch.cat((text_idx+self.img_vbs, img_idx), dim=1)[:, 1:]
         loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), target_idx.reshape(-1))
         return loss
-
-class TrecARModelOnline(TrecARModel):
-    def __init__(self,
-                 css,
-                 transformer_config,
-                 first_stage_config,
-                 ckpt_path=None,
-                 ignore_keys=[],
-                 pkeep=1.0
-                 ):
-            super().__init__(css,
-                         transformer_config,
-                         first_stage_config,
-                         ckpt_path,
-                         ignore_keys,
-                         pkeep)
 
     def get_input(self, batch):
         text_idx, images =  batch['text_idx'], batch['image']

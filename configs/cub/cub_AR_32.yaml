@@ -5,7 +5,7 @@ model:
     type: OneCycle
     max_lr: 1.0e-4
     pct_start: 0.02
-  target: taming.models.AR.TrecARModelOnline
+  target: taming.models.AR.TrecARModel
   params:
     css: 32
     transformer_config:
@@ -14,14 +14,15 @@ model:
         block_size: 1101  # = 1024 + 77
         text_vbs: 49408
         img_vbs: 2887
-        n_layer: 18
-        n_head: 8
-        n_embd: 768
+        n_layer: 24
+        n_head: 16
+        n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         add_cross: False
         full_head: True
+        checkpoint: 24
 
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
@@ -57,7 +58,7 @@ model:
 data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 5
+    batch_size: 8
     num_workers: 8
     train:
       target: taming.data.cub.CUB
@@ -65,13 +66,15 @@ data:
         split: train
         img_size: 288
         crop_size: 256
-        cache_path: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
-        meta_path: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        cache: train/304images.pkl
     validation:
       target: taming.data.cub.CUB
       params:
         split: test
         img_size: 288
         crop_size: 256
-        cache_path: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl
-        meta_path: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        data_root: /home/ma-user/work/lijiacheng/data/birds/
+        meta: metadata.pkl
+        cache: test/304images.pkl

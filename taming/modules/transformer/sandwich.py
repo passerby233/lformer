@@ -125,7 +125,6 @@ class GPT(nn.Module):
             for _, layer in enumerate(self.layers[seg:]):    
                 x = layer(x, att_mask, proj_eh)
         else:
-            x = self.layers[0](x, att_mask)
             for _, layer in enumerate(self.layers[:seg]):
                 x = checkpoint(layer, x, att_mask)
             for _, layer in enumerate(self.layers[seg:]):

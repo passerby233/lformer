@@ -54,15 +54,6 @@ class GenModel(pl.LightningModule):
         img_t = self.first_stage_model.decode_to_img(index)
         return img_t
 
-    """
-    # Absorbed in first_stage_model
-    def de_normalize(self, img_t):
-        return (img_t * self.STD.to(img_t) + self.MEAN.to(img_t)).clamp(0,1) # [B,C,H,W]
-
-    def normalize(self, img_t):
-        return (img_t - self.MEAN.to(img_t)) / self.STD.to(img_t) # [B,C,H,W]
-    """
-
     def top_k_logits(self, logits, k):
         v, ix = torch.topk(logits, k)
         out = logits.clone()
@@ -75,24 +66,6 @@ class GenModel(pl.LightningModule):
         r_indices = torch.randint_like(imgidx, self.img_vbs)
         imgidx = mask*imgidx + (1-mask)*r_indices
         return imgidx
-
-    @torch.no_grad()
-    def textidx_to_img(self, text_idx):
-        text_imgs = []
-        text_list = self.textidx_to_text(text_idx)
-        for text in text_list:
-            fig = plt.figure(figsize=(20,1))  
-            plt.axis('off')
-            plt.text(0,0, text, fontsize=20) 
-            buffer = BytesIO()
-            plt.savefig(buffer, format='jpg')
-            text_img = np.asarray(Image.open(buffer)) 
-            plt.close()
-            buffer.close()
-            text_imgs.append(torch.from_numpy(text_img /255.0))
-        text_img_tensor = torch.stack(text_imgs)
-        text_img_tensor = text_img_tensor.permute(0,3,1,2)
-        return text_img_tensor
 
     def textidx_to_text(self, text_idx):
         text_list = []

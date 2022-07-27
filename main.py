@@ -114,7 +114,9 @@ if __name__ == "__main__":
                 allgather_bucket_size=5e8, reduce_bucket_size=5e8, 
                 logging_batch_size_per_gpu=config.data.params.batch_size)
         else:
-            trainer_kwargs['strategy'] = DDPStrategy(find_unused_parameters=False)
+            flag = config.model.find_unused_parameters 
+            flag = True if flag is not None else False
+            trainer_kwargs['strategy'] = DDPStrategy(find_unused_parameters=flag)
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
         
         # configure learning rate

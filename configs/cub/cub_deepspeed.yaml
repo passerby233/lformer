@@ -90,4 +90,4 @@ data:
         data_root: /home/ma-user/work/lijiacheng/data/birds/
         meta: metadata.pkl
         fea: feature_cub_clip_train.pkl
-        cache: train/304images.pkl
+        cache: test/304images.pkl

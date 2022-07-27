@@ -1,32 +1,35 @@
 model:
   base_learning_rate: 1.0e-6
   max_epochs: 200
+  optimizer_params:
+    type: Adafactor
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
     pct_start: 0.02
-  target: taming.models.AR.TrecARModelOnline
+  target: taming.models.AR.TrecARModel
   params:
-    css: 16
+    css: 32
     transformer_config:
       target: taming.modules.transformer.sandwich.GPT
       params:
         block_size: 1101  # = 1024 + 77
         text_vbs: 49408
         img_vbs: 1024
-        n_layer: 18
-        n_head: 8
+        n_layer: 24
+        n_head: 16
         n_embd: 768
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         add_cross: False
         full_head: True
+        checkpoint: 24
     # taming VQGAN CelebA
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /cache/pretrained/vqmodel/faces/last.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/faces/celeba_f8.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:
@@ -36,9 +39,9 @@ model:
           in_channels: 3
           out_ch: 3
           ch: 128
-          ch_mult: [1,1,2,2,4]
+          ch_mult: [1,1,2,4]
           num_res_blocks: 2
-          attn_resolutions: [16]
+          attn_resolutions: [32]
           dropout: 0.0
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
@@ -46,17 +49,23 @@ model:
 data: #CelebA
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 16
+    batch_size: 8
     num_workers: 8
     train:
       target: taming.data.celeba.CelebA
       params:
         split: train
-        root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/CelebA-HQ-img
-        meta_path: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/metadata.pkl
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
+        img_root: CelebA-HQ-img
+        meta: metadata.pkl
     validation:
       target: taming.data.celeba.CelebA
       params:
         split: test
-        root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/CelebA-HQ-img
-        meta_path: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/metadata.pkl
+        img_size: 288
+        crop_size: 256
+        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
+        img_root: CelebA-HQ-img
+        meta: metadata.pkl

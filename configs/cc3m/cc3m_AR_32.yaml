@@ -5,7 +5,7 @@ model:
     type: OneCycle
     max_lr: 1.0e-4
     pct_start: 0.02
-  target: taming.models.AR.TrecARModelOnline
+  target: taming.models.AR.TrecARModel
   params:
     css: 32
     transformer_config:
@@ -15,13 +15,14 @@ model:
         text_vbs: 49408
         img_vbs: 1024
         n_layer: 18
-        n_head: 8
+        n_head: 16
         n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         add_cross: False
         full_head: True
+        checkpoint: 18
     # taming VQGAN Openimages Shrinked to 2887
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
@@ -57,7 +58,7 @@ model:
 data: #CC3M
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 5
+    batch_size: 8
     num_workers: 8
     train:
       target: taming.data.cc3m.CC3M
