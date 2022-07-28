@@ -6,8 +6,7 @@ from deepspeed.ops.sparse_attention.sparsity_config import SparsityConfig
 from deepspeed.ops.sparse_attention import SparseSelfAttention
 import deepspeed
 
-from .gpt import Attention
-from .sandwich import LayerNorm, SandwichLayer, GPT
+from .sandwich import LayerNorm, Attention, SandwichLayer, GPT
 
 checkpoint =  deepspeed.checkpointing.checkpoint
 import logging

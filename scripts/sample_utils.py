@@ -46,7 +46,8 @@ def get_parser():
     parser.add_argument("--cdt", type=int, default=64, help="num_of_candidate")
     parser.add_argument("--fbs", type=int, default=32, help="num_of_forward_batch_size_per_step")
     parser.add_argument("--out", type=str, default="/home/ma-user/work/lijiacheng/logs/sample/", 
-        help="img_output_path")
+                        help="img_output_path")
+    parser.add_argument("--cache", type=str2bool, default=True, help="whether to use cache")                    
 
     parser.add_argument("-b", "--base", nargs="*", metavar="base_config.yaml",
         help="paths to base configs. Loaded from left-to-right. "
@@ -97,8 +98,8 @@ def make_grid(img_t):
     grid = (grid.detach().cpu().numpy() * 255).astype(np.uint8) # [0,1] to [0,255]
     return grid
 
-def sample(model, text_idx, top_k=None, top_p=0.9, temperature=1.0):
-    img_idx = model.sample(text_idx, top_k, top_p, temperature)
+def sample(model, *args, **kargs):
+    img_idx = model.sample(*args, **kargs)
     img_t = model.decode_to_img(img_idx)
     return img_t
 

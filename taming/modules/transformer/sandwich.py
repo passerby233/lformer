@@ -1,11 +1,24 @@
+import math
 import logging
 
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 from torch.utils.checkpoint import checkpoint
-from .gpt import GPTConfig, Attention
 
 logger = logging.getLogger(__name__)
+
+class GPTConfig:
+    """ base GPT config, params common to all GPT versions """
+    embd_pdrop = 0.1
+    resid_pdrop = 0.1
+    attn_pdrop = 0.1
+
+    def __init__(self, vocab_size, block_size, **kwargs):
+        self.vocab_size = vocab_size
+        self.block_size = block_size
+        for k,v in kwargs.items():
+            setattr(self, k, v)
 
 class LayerNorm(nn.LayerNorm):
     # scale layernorm from cogview
@@ -13,6 +26,62 @@ class LayerNorm(nn.LayerNorm):
         super().__init__(*args, **kwargs)
     def forward(self, x):
         return super().forward(x / (x.abs().max().detach()/8))
+
+class Attention(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        assert config.n_embd % config.n_head == 0
+        # key, query, value projections for all heads
+        self.W_q= nn.Linear(config.n_embd, config.n_embd)
+        self.W_k = nn.Linear(config.n_embd, config.n_embd)
+        self.W_v = nn.Linear(config.n_embd, config.n_embd)
+        # regularization
+        self.attn_drop = nn.Dropout(config.attn_pdrop)
+        self.resid_drop = nn.Dropout(config.resid_pdrop)
+        # output projection
+        self.proj = nn.Linear(config.n_embd, config.n_embd)
+        self.n_head = config.n_head
+        self.PBrelax = config.PBrelax
+        self.alpha = 32 # for PBrelax
+
+    def forward(self, query, key, value, att_mask=None, layer_past=None, return_present=False):
+        B, C = query.shape[0], query.shape[2]
+        T_q, T_k, T_v = query.shape[1], key.shape[1], value.shape[1]
+        assert T_k == T_v
+
+        # calculate query, key, values for all heads in batch and move head forward to be the batch dim
+        q = self.W_q(query).view(B, T_q, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T_q, hs)
+        k = self.W_k(key).view(B, T_k, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T_k, hs)
+        v = self.W_v(value).view(B, T_v, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T_v, hs)
+
+        if layer_past is not None:
+            past_key, past_value = layer_past
+            k = torch.cat((past_key, k), dim=-2)
+            v = torch.cat((past_value, v), dim=-2)
+
+        # Self-attend: (B, nh, T_q, hs) x (B, nh, hs, T_k) -> (B, nh, T_q, T_k)
+        if self.PBrelax:
+            att = q * (1.0/ self.alpha / math.sqrt(k.size(-1))) @ k.transpose(-2, -1)
+            att = (att - att.abs().max().detach()) * self.alpha
+        else:
+            att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
+        if att_mask is not None and layer_past is None:
+            att = att.masked_fill(att_mask[:,:,:T_q,:T_k] == 0, float('-inf'))
+
+        att = F.softmax(att, dim=-1)
+        att = self.attn_drop(att)
+        y = att @ v # (B, nh, T_q, T_k) x (B, nh, T_v, hs) -> (B, nh, T_q, hs)
+        y = y.transpose(1, 2).contiguous().view(B, T_q, C) # re-assemble all head outputs side by side
+
+        # output projection
+        y = self.resid_drop(self.proj(y))
+
+        # return y and cache
+        present = None
+        if layer_past is not None or return_present:
+            present = (k[..., -T_q:,:], v[..., -T_q:,:])
+        return y, present
+        #return y, present   # TODO: check that this does not break anything
 
 class SandwichLayer(nn.Module):
     """ an unassuming Transformer Layer """
@@ -34,21 +103,24 @@ class SandwichLayer(nn.Module):
             nn.Dropout(config.resid_pdrop),
         )
 
-    def forward(self, x, att_mask=None, eh=None, eh_mask=None, layer_past=None, return_present=False):
+    def forward(self, x, att_mask=None, eh=None, eh_mask=None, 
+                layer_past=None,  return_present=False):
         # TODO: check that training still works
         if return_present: assert not self.training
         # layer past: tuple of length two with B, nh, T, hs
         x_norm = self.ln1(x)
-        attn, present = self.attn(x_norm, x_norm, x_norm, att_mask, layer_past, return_present)
+        attn, present = self.attn(x_norm, x_norm, x_norm, att_mask, 
+                                  layer_past, return_present)
         x = x + (self.ln1_2(attn))
 
         if hasattr(self, "cross_attn") and eh is not None:
-            cross_attn, cross_present = self.cross_attn(self.ln_cross(x), eh, eh, eh_mask, return_present)
+            x_norm_cross = self.ln_cross(x)
+            cross_attn, _ = self.cross_attn(x_norm_cross, eh, eh, eh_mask)
             x = x + self.ln_cross_2(cross_attn)
 
         x = x + self.ln2_2(self.mlp(self.ln2(x)))
 
-        if layer_past is not None or return_present:
+        if return_present:
             return x, present
         return x
 
@@ -134,3 +206,25 @@ class GPT(nn.Module):
         logits = self.head(x)
         return logits
 
+    def forward_with_past(self, input_ids, pos_ids, past=None, past_length=0, embeddings=None, eh=None):
+        token_embeddings = self.tok_emb(input_ids) # each index maps to a (learnable) vector
+        if embeddings is not None: # prepend explicit embeddings
+            token_embeddings = torch.cat((embeddings, token_embeddings), dim=1)
+        position_embeddings = self.pos_emb(pos_ids)
+        x = self.drop(token_embeddings + position_embeddings)
+
+        if self.add_cross and eh is not None:
+            proj_eh = self.eh_proj(eh)
+
+        input_length = x.shape[1]
+        for i, layer in enumerate(self.layers):
+            output = layer(x, return_present=True,
+                            eh=proj_eh if eh is not None else None,
+                            layer_past=past[i, ..., :past_length, :] if past is not None else None)
+            x = output[0]
+            past[i, 0, ..., past_length:past_length+input_length, :] = output[1][0] 
+            past[i, 1, ..., past_length:past_length+input_length, :] = output[1][1]
+
+        x = self.ln_f(x)
+        logits = self.head(x)
+        return logits, past

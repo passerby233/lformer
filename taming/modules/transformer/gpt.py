@@ -53,6 +53,11 @@ class Attention(nn.Module):
         k = self.W_k(key).view(B, T_k, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T_k, hs)
         v = self.W_v(value).view(B, T_v, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T_v, hs)
 
+        if layer_past is not None:
+            past_key, past_value = layer_past
+            k = torch.cat((past_key, k), dim=-2)
+            v = torch.cat((past_value, v), dim=-2)
+
         # Self-attend: (B, nh, T_q, hs) x (B, nh, hs, T_k) -> (B, nh, T_q, T_k)
         if self.PBrelax:
             att = q * (1.0/ self.alpha / math.sqrt(k.size(-1))) @ k.transpose(-2, -1)
@@ -69,13 +74,11 @@ class Attention(nn.Module):
 
         # output projection
         y = self.resid_drop(self.proj(y))
+
+        # return y and cache
         present = None
-        if return_present:
+        if layer_past is not None or return_present:
             present = torch.stack((k, v))
-            if layer_past is not None:
-                past_key, past_value = layer_past
-                k = torch.cat((past_key, k), dim=-2)
-                v = torch.cat((past_value, v), dim=-2)
         return y, present
         #return y, present   # TODO: check that this does not break anything
 

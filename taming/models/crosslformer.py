@@ -1,3 +1,4 @@
+from contextvars import Context
 from faulthandler import disable
 from matplotlib.pyplot import text
 import torch
@@ -93,10 +94,7 @@ class Lformer(GenModel):
         CE = F.cross_entropy(logits.reshape(-1, logits.size(-1)), Ltoken.reshape(-1))
         return CE, None
 
-    @torch.no_grad()
-    def infer_single_step(self, text_feature, text_hidden, padded,  t, 
-                          top_k=None, top_p=None, temperature=1.0, greedy=False):
-        logits, _ = self(text_feature, text_hidden, padded)
+    def process_logits(self, logits, t, top_k=None, top_p=None, temperature=1.0, greedy=False):
         # cut off the logits of text part, we are generating image tokens
         logits = logits[:, :, :self.img_vbs] 
         # pluck the logits at the final step and scale by temperature
@@ -128,25 +126,62 @@ class Lformer(GenModel):
         return pred_ids, probs
 
     @torch.no_grad()
-    def sample(self, text_idx, top_k=None, top_p=None, temperature=1.0, greedy=False, return_feature=False):
+    def infer_single_step(self, text_feature, text_hidden, padded,  t, 
+                          top_k=None, top_p=None, temperature=1.0, greedy=False):
+        logits, _ = self(text_feature, text_hidden, padded)
+        return self.process_logits(logits, t, top_k, top_p, temperature, greedy)
+        
+    @torch.no_grad()
+    def cached_single_step(self, text_hidden, padded, t, past=None, context=None,
+                          top_k=None, top_p=0.9, temperature=1.0, greedy=False):
+        assert past is not None or context is not None
+        pos_ids = self.pos_ids[:, t**2:(t+1)**2]
+        logits, past = self.transformer.forward_with_past(
+                            padded, pos_ids, past, past_length=t**2, eh=text_hidden, 
+                            embeddings=context if t==0 else None)
+        assert logits.shape[1] == 2*t+1
+        pred_ids, _ =  self.process_logits(logits, t, top_k, top_p, temperature, greedy)
+        return pred_ids, past
+
+    @torch.no_grad()
+    def sample(self, text_idx,
+               top_k=None, top_p=0.9, temperature=1.0, greedy=False, 
+               return_feature=False, use_cache=False):
+        # sample a token map from given text tokens
         assert not self.transformer.training
-        batch_size= text_idx.shape[0]
+        batch_size = text_idx.shape[0]
         pad_idx = (torch.ones(batch_size, 1)*self.pad_id).to(text_idx)
         text_feature, text_hidden = self.text_encoder(text_idx)
+        context = self.get_context(text_feature)
         Ltoken = torch.empty((batch_size, 0), dtype=torch.long, device=text_idx.device)
         padded = torch.empty((batch_size, 0), dtype=torch.long, device=text_idx.device)
+
+        # Prepare past if use cache
+        if use_cache:
+            config = self.transformer.config
+            past_shape = [config.n_layer, 2, batch_size, \
+                config.n_head, config.block_size, config.n_embd//config.n_head]
+            past = torch.empty(past_shape, dtype=text_hidden.dtype, device=text_hidden.device)
+
         for t in range(self.css):
-            pred_ids, probs = self.infer_single_step(
-                                text_feature, text_hidden, padded, t,
-                                top_k, top_p, temperature, greedy)
-            Ltoken = torch.cat((Ltoken, pred_ids), dim=1)
-            if t < self.css-1: # No need to cat at last step
-                padded = torch.cat((padded, pad_idx, pred_ids, pad_idx), dim=1)
+            if use_cache:
+                pred_ids, past = self.cached_single_step(
+                                    text_hidden, padded, t, past, context,
+                                    top_k, top_p, temperature, greedy)
+                Ltoken = torch.cat((Ltoken, pred_ids), dim=1)
+                if t < self.css-1: # No need to cat at last step
+                    padded = torch.cat((pad_idx, pred_ids, pad_idx), dim=1)
+            else:
+                pred_ids, _ = self.infer_single_step(
+                                    text_feature, text_hidden, padded, t,
+                                    top_k, top_p, temperature, greedy)
+                Ltoken = torch.cat((Ltoken, pred_ids), dim=1)
+                if t < self.css-1: # No need to cat at last step
+                    padded = torch.cat((padded, pad_idx, pred_ids, pad_idx), dim=1)
 
         if return_feature:
             return self.to_rs_order(Ltoken), text_feature
-        else:
-            return self.to_rs_order(Ltoken)
+        return self.to_rs_order(Ltoken)  
 
     @torch.no_grad()
     def log_images(self, batch, top_k=None, top_p=0.9, temperature=1.0,  **kwargs):
@@ -289,6 +324,7 @@ class Lformer(GenModel):
         new_Ltoken = torch.cat((new_Ltoken, Ltoken[:, css_out**2:]), dim=1)
         return self.to_rs_order(new_Ltoken)
 
+
 class CrossLformer(Lformer):
     def __init__(self,
                  css,
@@ -314,13 +350,16 @@ class CrossLformer(Lformer):
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
 
+    def get_context(self, text_feature):
+        return self.linear_ctx(text_feature).unsqueeze(1) # [B,H]
+
     def forward(self, text_feature, text_hidden, padded):
         seq_len = padded.shape[1] + 1 # add one for text_feature
         att_mask = self.att_mask[:, :seq_len, :seq_len]
         pos_ids = self.pos_ids[:, :seq_len]
-        context = self.linear_ctx(text_feature) # [B,H]
+        context = self.linear_ctx(text_feature).unsqueeze(1) # [B,1,H]
         logits = self.transformer(padded, att_mask, pos_ids, 
-            embeddings=context.unsqueeze(1), eh=text_hidden)
+            embeddings=context, eh=text_hidden)
         return logits, None
 
 
@@ -383,6 +422,13 @@ class CrossLformerLatent(Lformer):
         loss = CE + KLD
         return loss, KLD
 
+    def get_context(self, text_feature):
+        mu_c = self.linear_mu_c(text_feature)
+        z = self.reparameterize(mu_c, torch.zeros_like(mu_c))
+        w = self.latent_to_w(z)
+        context = self.linear_ctx(torch.cat((text_feature, w), dim=1)) # [B,H]
+        return context.unsqueeze(1)
+
     def forward(self, text_feature, text_hidden, padded, img_feature=None):
         mu_c = self.linear_mu_c(text_feature)
         KLD = None
@@ -394,13 +440,13 @@ class CrossLformerLatent(Lformer):
         else:
             z = self.reparameterize(mu_c, torch.zeros_like(mu_c))
         w = self.latent_to_w(z)
+        context = self.linear_ctx(torch.cat((text_feature, w), dim=1)).unsqueeze(1) # [B,1,H]
 
         seq_len = padded.shape[1] + 1
         att_mask = self.att_mask[:, :seq_len, :seq_len]
         pos_ids = self.pos_ids[:, :seq_len]
-        context = self.linear_ctx(torch.cat((text_feature, w), dim=1)) # [B,H]
         logits = self.transformer(padded, att_mask, pos_ids, 
-            embeddings=context.unsqueeze(1), eh=text_hidden)
+            embeddings=context, eh=text_hidden)
         return logits, KLD
 
     def configure_optimizers(self):
