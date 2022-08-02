@@ -15,9 +15,9 @@ model:
         block_size: 256  # = 1024 + 77
         text_vbs: 0
         img_vbs: 1024
-        n_layer: 18
+        n_layer: 19
         n_head: 16
-        n_embd: 512
+        n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1

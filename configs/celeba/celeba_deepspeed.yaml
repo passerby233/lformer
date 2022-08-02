@@ -5,7 +5,7 @@ model:
     type: Adafactor  #DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
-    max_lr: 2.0e-4
+    max_lr: 1.0e-4
     total_steps: 100000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
@@ -28,7 +28,7 @@ model:
         add_cross: True
         full_head: False
         PBrelax: False
-        checkpoint: 18
+        checkpoint: 4
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
@@ -59,7 +59,7 @@ model:
 data: #CelebA
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 32
+    batch_size: 16
     num_workers: 8
     train:
       target: taming.data.celeba.CelebAFeature

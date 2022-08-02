@@ -1,12 +1,12 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_steps: 30000
+  max_steps: 100000
   optimizer_params:
     type: Adafactor
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 30000
+    total_steps: 100000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
@@ -19,7 +19,7 @@ model:
         block_size: 1024
         text_vbs: 0
         img_vbs: 2887
-        n_layer: 24
+        n_layer: 19
         n_head: 16
         n_embd: 1024
         embd_pdrop: 0.1
@@ -28,7 +28,7 @@ model:
         full_head: False
         add_cross: True
         PBrelax: False
-        checkpoint: 24
+        checkpoint: 8
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
@@ -69,7 +69,7 @@ model:
 data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 32
+    batch_size: 16
     num_workers: 8
     train:
       target: taming.data.cub.CUBFeature
@@ -89,5 +89,5 @@ data:
         crop_size: 256
         data_root: /home/ma-user/work/lijiacheng/data/birds/
         meta: metadata.pkl
-        fea: feature_cub_clip_train.pkl
+        fea: feature_cub_clip_val.pkl
         cache: test/304images.pkl

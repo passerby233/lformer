@@ -2,13 +2,15 @@ import os, sys, glob, time
 dirname, filename = os.path.split(os.path.abspath(__file__))
 os.chdir(os.path.join(dirname, os.path.pardir))
 sys.path.append(os.getcwd())
-import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from PIL import Image
+
 from third_party.clip import clip
 from sample_utils import get_parser, get_config
 from sample_utils import load_model_and_data, make_grid
 from sample_utils import SamplerWithCLIP
+from taming.models.custom_clip import clip_transform, VisualEncoder
 
 if __name__ == "__main__":
     # Get args, detail options see sample_utils.py
@@ -17,14 +19,17 @@ if __name__ == "__main__":
     config, ckpt = get_config(opt, unknown)
 
     # Load Model and Data
-    model, data = load_model_and_data(config, ckpt, opt.gpu)
+    model, data = load_model_and_data(config, ckpt)
     dataloader = DataLoader(data.datasets['validation'], batch_size=opt.bs, pin_memory=True)
 
     # Load CLIP model for ranking
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
-    clip_model, preprocess = clip.load(clip_ckpt_path, device='cuda' if opt.gpu else 'cpu')
-    sampler = SamplerWithCLIP(model, clip_model, preprocess)
+    ranker = VisualEncoder(clip_ckpt_path)
+    #if opt.gpu:
+    #    ranker.cuda()
+    sampler = SamplerWithCLIP(model, ranker, clip_transform)
+    sampler = nn.DataParallel(sampler).cuda()
 
     # Create target folder
     if not os.path.exists(opt.out):
@@ -36,17 +41,13 @@ if __name__ == "__main__":
             batch_text_idx = batch_text_idx.cuda()
 
         start_time = time.time()
-        sample_list = []
-        for k in range(batch_text_idx.shape[0]):
-            print(f"Sampling for text {k}")
-            image_sample = sampler(batch_text_idx[k:k+1], opt.num_s, opt.cdt, opt.fbs)
-            sample_list.append(image_sample)
-        samples = torch.cat(sample_list, dim=0)
+        print(f"Sampling for batch {i}")
+        image_sample = sampler(batch_text_idx, opt.num_s, opt.cdt, opt.fbs).detach().cpu()
         time_used = time.time() - start_time
         print(f"batch_{i} uses time: {time_used}s")
         
         # Make image gird and save to path
-        img_grid = make_grid(samples)
+        img_grid = make_grid(image_sample)
         img_path = os.path.join(opt.out, f"imgs_batch_{i}.png")
         Image.fromarray(img_grid).save(img_path)
 

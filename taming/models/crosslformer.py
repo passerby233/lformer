@@ -127,7 +127,7 @@ class Lformer(GenModel):
 
     @torch.no_grad()
     def infer_single_step(self, text_feature, text_hidden, padded,  t, 
-                          top_k=None, top_p=None, temperature=1.0, greedy=False):
+                          top_k=None, top_p=0.9, temperature=1.0, greedy=False):
         logits, _ = self(text_feature, text_hidden, padded)
         return self.process_logits(logits, t, top_k, top_p, temperature, greedy)
         
@@ -184,7 +184,7 @@ class Lformer(GenModel):
         return self.to_rs_order(Ltoken)  
 
     @torch.no_grad()
-    def log_images(self, batch, top_k=None, top_p=0.9, temperature=1.0,  **kwargs):
+    def log_images(self, batch, top_k=512, top_p=0.9, temperature=1.0,  **kwargs):
         log = dict()
         text_idx, _, img_idx, _ = self.get_input(batch)
         # det sample

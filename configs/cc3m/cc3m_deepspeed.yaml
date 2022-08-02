@@ -28,7 +28,7 @@ model:
         full_head: False
         add_cross: True # Add cross attention
         PBrelax: False # To keep stable for >24 layers if on
-        checkpoint: 24
+        checkpoint: 5
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
@@ -70,7 +70,7 @@ model:
 data: #CC3M
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 32
+    batch_size: 16
     num_workers: 8
     train:
       target: taming.data.cc3m.CC3MFeature

@@ -129,7 +129,11 @@ class ClipTextEncoder(nn.Module):
 
     @property
     def dtype(self):
-        return next(self.transformer.parameters()).dtype
+        try:
+            dtype = next(self.transformer.parameters()).dtype
+        except:
+            dtype = torch.float32
+        return dtype
 
     def build_attention_mask(self):
         # lazily create causal attention mask, with full attention between the vision tokens
@@ -178,7 +182,11 @@ class CLIPVisualEncoder(pl.LightningModule):
 
     @property
     def dtype(self):
-        return next(self.parameters()).dtype
+        try:
+            dtype = next(self.parameters()).dtype
+        except:
+            dtype = torch.float32   
+        return dtype
 
     def forward(self, image):
         image_features =  self.visual(image.type(self.dtype))

@@ -3,6 +3,7 @@ dirname = os.path.dirname(__file__)
 os.chdir(os.path.join(dirname, os.path.pardir))
 sys.path.insert(0, os.getcwd())
 import torch
+import torch.nn as nn
 import numpy as np
 from omegaconf import OmegaConf
 from PIL import Image
@@ -79,21 +80,27 @@ def run_conditional(sampler, dsets):
     ### condition config
 
     temperature = st.sidebar.number_input("Temperature", value=1.0)
-    top_k = st.sidebar.number_input("Top k", value=100)
+    top_k = st.sidebar.number_input("Top k", value=512)
     top_p = st.sidebar.number_input("Top p", value=0.9)
     candidate = st.sidebar.number_input("candidate", value=32)
     fbs = st.sidebar.number_input("forward_batch_size", value=32)
     num_out = st.sidebar.number_input("num_out", value=4)
     #greedy = st.checkbox("Greedy", value=False)
 
+    device = next(sampler.parameters()).device
+    if hasattr(sampler, "module"):
+        tokenizer = sampler.module.model.tokenizer
+    else:
+        tokenizer = sampler.model.tokenizer
+
     ### Prepare input text
     text_input = st.text_input("Text_Input", "")
     if len(text_input) > 0 :
-        text_idx= sampler.model.tokenizer(text_input).to(next(sampler.parameters()).device)
+        text_idx= tokenizer(text_input).to(device)
         raw_text = text_input
     else:
-        text_idx = example['text_idx'].to(next(sampler.parameters()).device)
-        raw_text = sampler.model.tokenizer.decode(example['text_idx'][0].detach().cpu().numpy())
+        text_idx = example['text_idx'].to(device)
+        raw_text = tokenizer.decode(text_idx[0].detach().cpu().numpy())
     gt_txt.write(f"input_text: {raw_text}")
 
     ### Show raw image
@@ -185,14 +192,16 @@ def load_model_and_dset(config, ckpt, gpu, eval_mode):
         sd = convert_ckpt(ckpt_dict) # a state_dict with module.param
     model = load_model_from_config(config.model,
                                    sd,
-                                   gpu=gpu,
+                                   gpu=False,
                                    eval_mode=eval_mode)["model"]
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
     ranker = VisualEncoder(clip_ckpt_path)
-    if gpu:
-        ranker.cuda()
     sampler = SamplerWithCLIP(model, ranker, clip_transform)
+    #sampler = nn.DataParallel(sampler)
+    if gpu:
+        sampler = sampler.cuda()
+    sampler.eval()
     return dsets, sampler
 
 

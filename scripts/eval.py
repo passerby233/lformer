@@ -4,6 +4,7 @@ os.chdir(os.path.join(dirname, os.path.pardir))
 sys.path.insert(0, os.getcwd())
 
 import torch
+import torch.nn as nn
 import numpy as np
 from torchmetrics.image.fid import FrechetInceptionDistance
 
@@ -49,14 +50,16 @@ if __name__ == "__main__":
     model = instantiate_from_config(config)
     missing, unexpected = model.load_state_dict(sd, strict=False)
     print(f"missing = {missing}, unexpected={unexpected}")
-    model.cuda().eval()
+    model.eval()
 
     # load clip visual encoder to get full sampler
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
-    ranker = VisualEncoder(clip_ckpt_path).cuda()
+    ranker = VisualEncoder(clip_ckpt_path)
     sampler = SamplerWithCLIP(model, ranker, clip_transform)
+    sampler = nn.DataParallel(sampler).cuda()
 
+    """
     # prepare for evaluation
     sample_size = 64
     forward_size = 32
@@ -65,3 +68,4 @@ if __name__ == "__main__":
     for batch in valset:
         text_idx = batch['text_idx'].cuda()
         image_sample = sampler(text_idx, 1, sample_size, forward_size)
+    """

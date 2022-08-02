@@ -83,7 +83,7 @@ class ARModel(GenModel):
     @torch.no_grad()
     def sample(self, text_idx, 
                top_k=None, top_p=0.9, temperature=1.0, greedy=False, 
-               half=None, use_cache=False):
+               half=None, use_cache=True):
         block_size = self.transformer.get_block_size()
         assert not self.transformer.training
         steps = self.css**2//2 if half is not None else self.css**2

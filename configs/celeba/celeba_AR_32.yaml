@@ -16,15 +16,15 @@ model:
         block_size: 1101  # = 1024 + 77
         text_vbs: 49408
         img_vbs: 1024
-        n_layer: 24
+        n_layer: 19
         n_head: 16
-        n_embd: 768
+        n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         add_cross: False
         full_head: True
-        checkpoint: 24
+        checkpoint: 19
     # taming VQGAN CelebA
     first_stage_config:
       target: taming.models.vqgan.VQModel
@@ -49,7 +49,7 @@ model:
 data: #CelebA
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 8
+    batch_size: 16
     num_workers: 8
     train:
       target: taming.data.celeba.CelebA

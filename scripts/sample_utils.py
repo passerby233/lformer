@@ -43,7 +43,7 @@ def get_parser():
     parser.add_argument("--gpu", type=str2bool, default=True, help="whether to use gpu")
     parser.add_argument("--bs", type=int, default=1, help="batch_size")
     parser.add_argument("--num_s", type=int, default=1, help="num_of_sample_for_each_text")
-    parser.add_argument("--cdt", type=int, default=64, help="num_of_candidate")
+    parser.add_argument("--cdt", type=int, default=32, help="num_of_candidate")
     parser.add_argument("--fbs", type=int, default=32, help="num_of_forward_batch_size_per_step")
     parser.add_argument("--out", type=str, default="/home/ma-user/work/lijiacheng/logs/sample/", 
                         help="img_output_path")
@@ -70,25 +70,45 @@ class SamplerWithCLIP(torch.nn.Module):
         self.ranker = ranker
         self.preprocess = T.Compose([T.ToPILImage(), preprocess])
 
-    def forward(self, text_idx,  num_s=4, candidate=64, fbs=32, 
-                 top_k=100, top_p=0.9, temperature=1.0):
+    def forward(self, text_idx, num_s=1, candidate=32, fbs=32, 
+                 top_k=None, top_p=0.9, temperature=1.0, use_cache=True):
+        batch_size = text_idx.shape[0]
         fbs = min(candidate, fbs)
-        assert text_idx.shape[0] == 1 and candidate % fbs == 0
-        for t in range(candidate // fbs):
-            ex_text = text_idx.expand(fbs, -1) # repeat text  [B, L] 
-            cur_img_idx, text_feature = self.model.sample(ex_text, top_k, top_p, temperature, 
-                                                        return_feature=True)
-            if t == 0:
-                img_idx = cur_img_idx
-            else:
-                img_idx = torch.cat((img_idx, cur_img_idx), dim=0)
+        if batch_size > 1:
+            assert candidate == fbs, "batch_size > 1, assert memory is enough"
+        assert candidate % fbs == 0, f"candidate % fbs should be 0"
+        img_idx = torch.empty((batch_size*candidate, self.model.block_size), 
+                                dtype=text_idx.dtype, device=text_idx.device)
+
+        if batch_size == 1:
+            for t in range(candidate // fbs):
+                ex_text = text_idx.expand(fbs, -1) # repeat text  [B, L] 
+                img_idx[candidate*t:candidate*(t+1), :], text_feature = \
+                    self.model.sample(ex_text, top_k, top_p, temperature, 
+                        return_feature=True, use_cache=use_cache)
+        else:
+            # [B*cdt, L] ,repeat each text to cdt
+            ex_text = text_idx[:,None,:].repeat(1, candidate, 1).view(-1, text_idx.shape[-1])
+            img_idx[...], text_feature = \
+                self.model.sample(ex_text, top_k, top_p, temperature, 
+                                  return_feature=True, use_cache=use_cache)
      
         img_t = self.model.decode_to_img(img_idx) # [B,C,H,W]
         img_processed = torch.stack(
             [self.preprocess(s_img_t) for s_img_t in img_t]).to(text_idx.device)
-        logits_per_image, logits_per_text = self.ranker.clip_score(img_processed, text_feature[:1])
-        value, index = logits_per_text.squeeze().topk(num_s)
-        image_sample = img_t[index].detach().cpu()
+        
+        image_list = []
+        img_t = img_t.view(batch_size, candidate, *img_t.shape[-3:])
+        img_processed = img_processed.view(batch_size, candidate, *img_processed.shape[-3:])
+        text_feature = text_feature.view(batch_size, candidate, -1)
+        for batch_idx in range(batch_size):
+            s_img_t = img_t[batch_idx]
+            s_img_processed = img_processed[batch_idx]
+            s_text_feature = text_feature[batch_idx, :1]
+            logits_per_image, logits_per_text = self.ranker.clip_score(s_img_processed, s_text_feature)
+            value, index = logits_per_text.squeeze().topk(num_s)
+            image_list.append(s_img_t[index])
+        image_sample = torch.cat(image_list, 0)
         return image_sample
 
 def make_grid(img_t):
