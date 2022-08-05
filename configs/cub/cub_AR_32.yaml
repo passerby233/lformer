@@ -27,8 +27,8 @@ model:
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/last.ckpt
-        mapping_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/last.ckpt
+        mapping_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/taming_vqvae_2887.pt
         kl_weight: 1.0e-08
         embed_dim: 256
         n_embed: 8192
@@ -66,15 +66,13 @@ data:
         split: train
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        cache: train/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
     validation:
       target: taming.data.cub.CUB
       params:
         split: test
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        cache: test/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl

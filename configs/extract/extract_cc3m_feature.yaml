@@ -25,5 +25,5 @@ data: #CelebA
         img_root: val2017
         meta: metadata_coco_val.pkl
 
-clip_ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
+clip_ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
 save_prefix: /home/ma-user/modelarts/outputs/train_url_0/feature_cc3m_clip # will add .pkl automaticallly

@@ -22,27 +22,21 @@ from util import instantiate_from_config
 from third_party.clip.clip import CLIPTokenizer
 
 class WrappedDataset(Dataset):
-    def __init__(self, dataroot, img_root=None, meta=None, fea=None,
+    def __init__(self, img_root=None, meta=None, fea=None,
                 img_size=288, crop_size=256,
                 mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
                 split='train'):
         super().__init__()
-        meta_path = os.path.join(dataroot, meta)
-        print(f"Loading from {meta_path} {os.path.getsize(meta_path)//1024}")
-        with open(meta_path, 'rb') as f:
+        print(f"Loading from {meta} {os.path.getsize(meta)//1024}")
+        with open(meta, 'rb') as f:
             self.metadata = pickle.load(f)
         self.img_id_to_captions = self.metadata['img_id_to_captions']
 
         if fea is not None:
-            fea_path = os.path.join(dataroot, fea)
-            with open(fea_path, 'rb') as f:
+            with open(fea, 'rb') as f:
                 self.img_id_to_feature = pickle.load(f)['img_id_to_feature']
 
-        if img_root is not None:
-            self.img_root = os.path.join(dataroot, img_root)
-        else:
-            self.img_root = dataroot
-
+        self.img_root = img_root
         self.tokenizer = CLIPTokenizer()
         self.transform = self.get_transform(img_size, crop_size, mean, std, split)
         

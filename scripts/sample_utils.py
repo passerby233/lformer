@@ -47,7 +47,10 @@ def get_parser():
     parser.add_argument("--fbs", type=int, default=32, help="num_of_forward_batch_size_per_step")
     parser.add_argument("--out", type=str, default="/home/ma-user/work/lijiacheng/logs/sample/", 
                         help="img_output_path")
-    parser.add_argument("--cache", type=str2bool, default=True, help="whether to use cache")                    
+    parser.add_argument("--cache", type=str2bool, default=True, help="whether to use cache")
+    parser.add_argument("--top_k", type=int, default=512, help="probability truncate")       
+    parser.add_argument("--top_p", type=float, default=0.9, help="nucleus sampling")
+    parser.add_argument("--eval", type=str2bool, default=False, help="nucleus sampling")                    
 
     parser.add_argument("-b", "--base", nargs="*", metavar="base_config.yaml",
         help="paths to base configs. Loaded from left-to-right. "
@@ -111,6 +114,13 @@ class SamplerWithCLIP(torch.nn.Module):
         image_sample = torch.cat(image_list, 0)
         return image_sample
 
+def save_text(batch_text_idx, tokenizer, text_path):
+    text_idx = batch_text_idx.detach().cpu().numpy()
+    with open(text_path, 'w') as f:
+        for text_id in text_idx:
+            text = tokenizer.decode(text_id)
+            f.write(text+'\n')
+
 def make_grid(img_t):
     # convert [B,]
     grid = torchvision.utils.make_grid(img_t, nrow=4)
@@ -126,8 +136,15 @@ def sample(model, *args, **kargs):
 def load_model_and_data(config, ckpt, gpu=False, eval=True):
     data = instantiate_from_config(config.data)
     data.setup()
-    config.model.params.ckpt_path = ckpt
+
+    ckpt_dict = torch.load(ckpt, map_location="cpu")
+    if "state_dict" in ckpt_dict:
+        sd = ckpt_dict["state_dict"]
+    else:
+        sd = convert_ckpt(ckpt_dict) # a state_dict with module.param
+
     model = instantiate_from_config(config.model)
+    model.load_state_dict(sd, strict=False)
     if gpu:
         model = model.cuda()
         #model = torch.nn.DataParallel(model)

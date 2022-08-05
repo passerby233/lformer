@@ -32,14 +32,14 @@ model:
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
         freeze: True
 
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/last.ckpt
-        mapping_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/last.ckpt
+        mapping_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/taming_vqvae_2887.pt
         kl_weight: 1.0e-08
         embed_dim: 256
         n_embed: 8192
@@ -69,7 +69,7 @@ model:
 data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 16
+    batch_size: 32
     num_workers: 8
     train:
       target: taming.data.cub.CUBFeature
@@ -77,17 +77,15 @@ data:
         split: train
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        fea: feature_cub_clip_train.pkl
-        cache: train/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_train.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
     validation:
       target: taming.data.cub.CUBFeature
       params:
         split: test
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        fea: feature_cub_clip_val.pkl
-        cache: test/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_val.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl

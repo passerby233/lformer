@@ -1,18 +1,18 @@
 import os
 import pickle
+from cachetools import Cache
 import numpy as np
 from PIL import Image
 from .utils import WrappedDataset
 
 class CUB(WrappedDataset):
-    def __init__(self, data_root, img_root=None, meta=None, fea=None,
+    def __init__(self, img_root=None, meta=None, fea=None,
                 img_size=304, crop_size=256,
                 mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
                 split='train', cache=None):
-        super().__init__(data_root, img_root, meta, fea, 
+        super().__init__(img_root, meta, fea, 
                          img_size, crop_size, mean, std, split)
-        cache_path = os.path.join(data_root, cache)
-        with open(cache_path, 'rb') as f:
+        with open(cache, 'rb') as f:
             self.img_id_to_images = pickle.load(f)
 
         self.img_id_to_filename = self.metadata['img_id_to_filename']

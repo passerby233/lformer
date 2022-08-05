@@ -29,7 +29,7 @@ model:
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/faces/celeba_f8.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/faces/celeba_f8.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:
@@ -57,15 +57,13 @@ data: #CelebA
         split: train
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl
     validation:
       target: taming.data.celeba.CelebA
       params:
         split: test
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl

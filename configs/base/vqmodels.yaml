@@ -2,7 +2,7 @@
     first_stage_config:
       target: taming.models.vqvae.VQVAE
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/cogview_vqvae/vqvae_hard_biggerset_011.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/cogview_vqvae/vqvae_hard_biggerset_011.ckpt
         channel: 512
         stride: 6
         embed_dim: 256
@@ -14,8 +14,8 @@
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/last.ckpt
-        mapping_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/last.ckpt
+        mapping_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/taming_vqvae_2887.pt
         kl_weight: 1.0e-08
         embed_dim: 256
         n_embed: 8192
@@ -46,7 +46,7 @@
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/vqmodel/faces/last.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/faces/last.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:

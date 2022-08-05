@@ -3,11 +3,11 @@ import numpy as np
 from .utils import WrappedDataset
 
 class CelebA(WrappedDataset):
-    def __init__(self, data_root, img_root=None, meta=None, fea=None,
+    def __init__(self, img_root=None, meta=None, fea=None,
                  img_size=288, crop_size=256, 
                  mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], 
                  split='train'):
-        super().__init__(data_root, img_root, meta, fea, 
+        super().__init__(img_root, meta, fea, 
                          img_size, crop_size, mean, std, split)
         self.img_ids = self.metadata[split]
 

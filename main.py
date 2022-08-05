@@ -1,7 +1,4 @@
 import os, sys
-dirname = os.path.dirname(os.path.abspath(__file__))
-os.chdir(dirname)
-sys.path.append(os.getcwd())
 import argparse, datetime, glob 
 from omegaconf import OmegaConf
 from pytorch_lightning import seed_everything

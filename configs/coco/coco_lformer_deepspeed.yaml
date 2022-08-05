@@ -1,11 +1,12 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_epochs: 50 # 50K steps budget
+  max_steps: 200000 # 200K steps budget
   optimizer_params:
-    type: DeepSpeedCPUAdam
+    type: Adafactor #DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
     max_lr: 2.0e-4
+    total_steps: 200000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
@@ -30,14 +31,14 @@ model:
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /cache/pretrained/clip/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
         
     # taming VQGAN Openimages Shrinked to 2887
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
       params:
-        ckpt_path: /cache/pretrained/vqmodel/openimages/last.ckpt
-        mapping_path: /cache/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/last.ckpt
+        mapping_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/taming_vqvae_2887.pt
         kl_weight: 1.0e-08
         embed_dim: 256
         n_embed: 8192
@@ -73,12 +74,11 @@ data: #CC3M
       target: taming.data.coco.COCO
       params:
         split: train
-        data_root: /home/ma-user/work/lijiacheng/data/coco/
-        meta: metadata_coco_train.pkl
+        img_root: /cache/coco/train2017
+        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_train.pkl
     validation:
       target: taming.data.coco.COCO
       params:
         split: test
-        data_root: /home/ma-user/work/lijiacheng/data/coco/
-        img_root: val2017
-        meta: metadata_coco_val.pkl
+        img_root: /cache/coco/val2017
+        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_val.pkl

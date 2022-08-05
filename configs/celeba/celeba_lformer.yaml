@@ -27,13 +27,13 @@ model:
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
         
     # taming VQGAN CelebA
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /cache/pretrained/vqmodel/faces/last.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/faces/celeba_f16.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:
@@ -59,13 +59,15 @@ data: #CelebA
       target: taming.data.celeba.CelebA
       params:
         split: train
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
+        img_size: 288
+        crop_size: 256
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl
     validation:
       target: taming.data.celeba.CelebA
       params:
         split: test
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
+        img_size: 288
+        crop_size: 256
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl

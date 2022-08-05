@@ -53,7 +53,7 @@ if __name__ == "__main__":
     model.eval()
 
     # load clip visual encoder to get full sampler
-    clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt"
+    clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
     ranker = VisualEncoder(clip_ckpt_path)
     sampler = SamplerWithCLIP(model, ranker, clip_transform)

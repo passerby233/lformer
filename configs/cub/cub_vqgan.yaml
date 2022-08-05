@@ -1,7 +1,7 @@
 model:
   find_unused_parameters: True
-  base_learning_rate: 1.44e-04
-  max_epochs: 200
+  base_learning_rate: 1.44e-4
+  max_steps: 200000
   target: taming.models.vqgan.VQModel
   params:
     embed_dim: 256
@@ -13,9 +13,9 @@ model:
       in_channels: 3
       out_ch: 3
       ch: 128
-      ch_mult: [1,1,2,4]
+      ch_mult: [1,1,2,2,4]
       num_res_blocks: 2
-      attn_resolutions: []
+      attn_resolutions: [16]
       dropout: 0.0
     lossconfig:
       target: third_party.losses.vqperceptual.VQLPIPSWithDiscriminator
@@ -37,15 +37,13 @@ data:
         split: train
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        cache: train/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
     validation:
       target: taming.data.cub.CUB
       params:
         split: test
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        cache: test/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl

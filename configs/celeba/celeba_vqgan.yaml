@@ -1,6 +1,6 @@
 model:
   base_learning_rate: 1.44e-04
-  max_epochs: 200
+  max_steps: 200000
   target: taming.models.vqgan.VQModel
   params:
     embed_dim: 256
@@ -12,9 +12,9 @@ model:
       in_channels: 3
       out_ch: 3
       ch: 128
-      ch_mult: [1,1,2,4]
+      ch_mult: [1,1,2,2,4]
       num_res_blocks: 2
-      attn_resolutions: [32]
+      attn_resolutions: [16]
       dropout: 0.0
     lossconfig:
       target: third_party.losses.vqperceptual.VQLPIPSWithDiscriminator
@@ -36,15 +36,13 @@ data: #CelebA
         split: train
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl
     validation:
       target: taming.data.celeba.CelebA
       params:
         split: test
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl

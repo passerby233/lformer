@@ -1,7 +1,7 @@
-data: # CUB VQGAN
+data: # CUBVQGAN
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 12
+    batch_size: 32
     num_workers: 8
     train:
       target: taming.data.cub.CUBFeature
@@ -9,20 +9,18 @@ data: # CUB VQGAN
         split: train
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        fea: feature_cub_clip_train.pkl
-        cache: train/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_train.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
     validation:
       target: taming.data.cub.CUBFeature
       params:
         split: test
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        fea: feature_cub_clip_train.pkl
-        cache: train/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_val.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl
 
 data: # CUB VQVAE
   target: taming.data.utils.DataModuleFromConfig
@@ -37,10 +35,9 @@ data: # CUB VQVAE
         std: [0.30379, 0.32279, 0.32800]
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        fea: feature_cub_clip_train.pkl
-        cache: train/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_train.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
     validation:
       target: taming.data.cub.CUBFeature
       params:
@@ -49,10 +46,9 @@ data: # CUB VQVAE
         std: [0.30379, 0.32279, 0.32800]
         img_size: 288
         crop_size: 256
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        meta: metadata.pkl
-        fea: feature_cub_clip_train.pkl
-        cache: train/304images.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_val.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl
 
 
 data: #CelebA
@@ -64,33 +60,37 @@ data: #CelebA
       target: taming.data.celeba.CelebAFeature
       params:
         split: train
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
-        fea: feature_celeba_clip_train.pkl
+        img_size: 288
+        crop_size: 256
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl
+        fea: /cache/CelebAMask-HQ/feature_celeba_clip_train.pkl
     validation:
       target: taming.data.celeba.CelebAFeature
       params:
         split: test
-        data_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/
-        img_root: CelebA-HQ-img
-        meta: metadata.pkl
-        fea: feature_celeba_clip_val.pkl
+        img_size: 288
+        crop_size: 256
+        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
+        meta: /cache/CelebAMask-HQ/metadata.pkl
+        fea: /cache/CelebAMask-HQ/feature_celeba_clip_val.pkl
 
 data: #CC3M
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 4
+    batch_size: 16
     num_workers: 8
     train:
-      target: taming.data.cc3m.CC3M
+      target: taming.data.cc3m.CC3MFeature
       params:
         split: train
-        root: /cache/cc3m/
-        meta_path: /cache/cc3m/metadata_cc3m.pkl
+        img_root: /cache/cc3m/
+        meta: /cache/cc3m/metadata_cc3m.pkl
+        fea: /cache/cc3m/feature_cc3m_clip_train.pkl
     validation:
-      target: taming.data.coco.COCO
+      target: taming.data.coco.COCOFeature
       params:
         split: test
-        root: /cache/cc3m/val2017
-        meta_path: /cache/cc3m/metadata_coco_val.pkl
+        img_root: /cache/cc3m/val2017
+        meta: /cache/cc3m/metadata_coco_val.pkl
+        fea: /cache/cc3m/feature_cc3m_clip_val.pkl

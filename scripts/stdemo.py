@@ -194,7 +194,7 @@ def load_model_and_dset(config, ckpt, gpu, eval_mode):
                                    sd,
                                    gpu=False,
                                    eval_mode=eval_mode)["model"]
-    clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt"
+    clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
     ranker = VisualEncoder(clip_ckpt_path)
     sampler = SamplerWithCLIP(model, ranker, clip_transform)

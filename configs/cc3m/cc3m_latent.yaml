@@ -29,15 +29,15 @@ model:
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /cache/pretrained/clip/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
         freeze: True
         
     # taming VQGAN Openimages Shrinked to 2887
     first_stage_config:
       target: taming.models.vqgan.ShrinkVQ
       params:
-        ckpt_path: /cache/pretrained/vqmodel/openimages/last.ckpt
-        mapping_path: /cache/pretrained/vqmodel/openimages/taming_vqvae_2887.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/last.ckpt
+        mapping_path: /home/ma-user/work/lijiacheng/vqmodel/openimages/taming_vqvae_2887.pt
         kl_weight: 1.0e-08
         embed_dim: 256
         n_embed: 8192
@@ -67,20 +67,19 @@ model:
 data: #CC3M
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 7
+    batch_size: 16
     num_workers: 8
     train:
       target: taming.data.cc3m.CC3MFeature
       params:
         split: train
-        data_root: /cache/cc3m/
-        meta: metadata_cc3m.pkl
-        fea: feature_cc3m_clip_train.pkl
+        img_root: /cache/cc3m/
+        meta: /cache/cc3m/metadata_cc3m.pkl
+        fea: /cache/cc3m/feature_cc3m_clip_train.pkl
     validation:
       target: taming.data.coco.COCOFeature
       params:
         split: test
-        data_root: /cache/cc3m/
-        img_root: val2017
-        meta: metadata_coco_val.pkl
-        fea: feature_cc3m_clip_val.pkl
+        img_root: /cache/cc3m/val2017
+        meta: /cache/cc3m/metadata_coco_val.pkl
+        fea: /cache/cc3m/feature_cc3m_clip_val.pkl

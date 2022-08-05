@@ -38,12 +38,15 @@ def mp_run(func, args, num_p=7):
         p.join()
 
 def prepare_extend_args(args, unknown):
-    extend_args = [f"--world_size={args.world_size}"]
+    extend_args = [f"--base={args.base}"]
+    extend_args.extend([f"--world_size={args.world_size}"])
     for ukn in unknown:
         extend_args.append(ukn)
     
     if len(args.train_url):
         extend_args.extend([f"--train_url={args.train_url}"])
+    if len(args.data_url):
+        extend_args.extend([f"--data_url={args.data_url}"])
     
     print("MA train entry extended args", extend_args)
     return extend_args     
@@ -112,8 +115,7 @@ def main():
     parser.add_argument('--init_method', default='tcp://127.0.0.1:6666', help='tcp_port')  
     parser.add_argument('--world_size', type=int, default=1, help='total number of nodes')                  
     parser.add_argument('--rank', type=int, default=0, help='the index of node')
-    parser.add_argument("--cc3m", type=str2bool, const=True, default=False,
-                        nargs="?", help="whether to download and decompress cc3m")
+    parser.add_argument("--base", type=str, default="", help="config file")
 
     # Get args
     args, unkown = parser.parse_known_args()
@@ -128,18 +130,27 @@ def main():
     print(addr, port, os.environ['GROUP_RANK'])
 
     # Prepare data
-    if args.cc3m:
+    if 'cc3m' in args.base:
         source_dir = "/home/ma-user/work/zhanzongyuan/cc3m/"
         target_dir = "/cache/cc3m/"
         if not os.path.exists(target_dir):
             os.makedirs(target_dir, exist_ok=True)
         prepare_cc3m(source_dir, target_dir)
-        download("s3://bucket-3947/lijiacheng/pretrained", "/cache/pretrained")
-        print(os.listdir(target_dir))
+    elif 'celeba' in args.base:
+        source_dir = "s3://bucket-3947/lijiacheng/datasets/celeba/"
+        target_dir = "/cache/"
+        download_and_release(source_dir, target_dir, "CelebAMask-HQ.zip")
+    elif 'coco' in args.base:
+        source_dir = "s3://bucket-3947/lijiacheng/datasets/coco/"
+        target_dir = '/cache/coco/'    
+        for zipfile in ['annotations_trainval2017.zip', 'train2017.zip', 'val2017.zip']:
+            release(target_dir, zipfile)
 
-        # wait for all node sync
-        enter_node_barrier(args)
-
+    # wait for all node sync
+    print(os.listdir(target_dir))
+    enter_node_barrier(args)
+    #download("s3://bucket-3947/lijiacheng/pretrained", "/cache/pretrained")
+    
     # Running script
     cmd = f"python {args.main}"
     cmd = cmd + ' ' + ' '.join(extend_args)

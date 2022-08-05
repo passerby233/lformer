@@ -44,7 +44,7 @@ class TextEncoder(pl.LightningModule):
         state_dict = model.state_dict()
         args = get_structure(state_dict)
         self.encoder = ClipTextEncoder(**args)
-        #model_path = "/home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt"
+        #model_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
         missing, unexpected = self.encoder.load_state_dict(state_dict, strict=False)
         print(f"TextEncoder Loaded, missing:{missing}")
 
@@ -194,7 +194,7 @@ class CLIPVisualEncoder(pl.LightningModule):
         return image_features
 
 def main():
-    model_path = "/home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt"
+    model_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
     text_encoder = TextEncoder(model_path)
     breakpoint()
 
