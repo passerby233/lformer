@@ -10,9 +10,8 @@ data:
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]
         std: [0.26862954, 0.26130258, 0.27577711]
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        cache: /train/304images.pkl
-        meta: metadata.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl
     validation:
       target: taming.data.cub.CUB
       params:
@@ -20,9 +19,8 @@ data:
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]
         std: [0.26862954, 0.26130258, 0.27577711]
-        data_root: /home/ma-user/work/lijiacheng/data/birds/
-        cache: /test/304images.pkl
-        meta: metadata.pkl
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl
 
 clip_ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
 save_prefix: /data/s3/features/feature_cub_clip

@@ -11,8 +11,9 @@ data: #CelebA
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]
         std: [0.26862954, 0.26130258, 0.27577711]
-        data_root: /cache/cc3m/
-        meta: metadata_cc3m_18.pkl
+        img_root: /cache/cc3m/
+        meta: /cache/cc3m/metadata_cc3m.pkl
+        fea: /cache/cc3m/feature_cc3m_clip_train.pkl
     validation:
       target: taming.data.coco.COCO
       params:
@@ -21,9 +22,9 @@ data: #CelebA
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]
         std: [0.26862954, 0.26130258, 0.27577711]
-        data_root: /cache/cc3m/
-        img_root: val2017
-        meta: metadata_coco_val.pkl
+        img_root: /cache/cc3m/val2017
+        meta: /cache/cc3m/metadata_coco_val.pkl
+        fea: /cache/cc3m/feature_cc3m_clip_val.pkl
 
 clip_ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
 save_prefix: /home/ma-user/modelarts/outputs/train_url_0/feature_cc3m_clip # will add .pkl automaticallly

@@ -1,9 +1,10 @@
 model:
   find_unused_parameters: True
-  base_learning_rate: 1.44e-4
-  max_steps: 200000
+  base_learning_rate: 1.0e-4
+  max_steps: 10000
   target: taming.models.vqgan.VQModel
   params:
+    ckpt_path: ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/vqgan_imagenet_f16_1024/vqgan_imagenet_f16_1024.ckpt
     embed_dim: 256
     n_embed: 1024
     ddconfig:
@@ -22,7 +23,7 @@ model:
       params:
         disc_conditional: false
         disc_in_channels: 3
-        disc_start: 30001
+        disc_start: 0
         disc_weight: 0.8
         codebook_weight: 1.0
 

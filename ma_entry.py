@@ -144,7 +144,7 @@ def main():
         source_dir = "s3://bucket-3947/lijiacheng/datasets/coco/"
         target_dir = '/cache/coco/'    
         for zipfile in ['annotations_trainval2017.zip', 'train2017.zip', 'val2017.zip']:
-            release(target_dir, zipfile)
+            download_and_release(source_dir, target_dir, zipfile)
 
     # wait for all node sync
     print(os.listdir(target_dir))

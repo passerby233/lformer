@@ -1,80 +1,81 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_steps: 200000 # 200K steps budget
+  max_steps: 100000
   optimizer_params:
-    type: Adafactor #DeepSpeedCPUAdam
+    type: Adafactor
   scheduler_params:
     type: OneCycle
-    max_lr: 0.5e-5
-    total_steps: 200000
+    max_lr: 1.0e-4
+    total_steps: 100000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
-    css: 32
+    css: 16
     w_layer: 12
     transformer_config:
-      target: taming.modules.transformer.sparse.SparseGPT
+      target: taming.modules.transformer.sandwich.GPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
         block_size: 1024
         text_vbs: 0
-        img_vbs: 8192
-        n_layer: 24
+        img_vbs: 2887
+        n_layer: 19
         n_head: 16
         n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         full_head: False
-        add_cross: True # Add cross attention
-        PBrelax: False # To keep stable for >24 layers if on
-        checkpoint: 8
+        add_cross: True
+        PBrelax: False
+        checkpoint: 19
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/ViT-B-16.pt
+        freeze: True
         
     # taming VQGAN CelebA
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/coco_epoch117.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/vqgan_imagenet_f16_1024/vqgan_imagenet_f16_1024.ckpt
         embed_dim: 256
-        n_embed: 8192
+        n_embed: 1024
         ddconfig:
           double_z: false
           z_channels: 256
-          resolution: 512
+          resolution: 256
           in_channels: 3
           out_ch: 3
           ch: 128
           ch_mult: [1,1,2,2,4]
           num_res_blocks: 2
-          attn_resolutions: [32]
+          attn_resolutions: [16]
           dropout: 0.0
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
 
-data: #CC3M
+data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 8
+    batch_size: 32
     num_workers: 8
     train:
-      target: taming.data.coco.COCOFeature
+      target: taming.data.cub.CUBFeature
       params:
         split: train
-        img_size: 576
-        crop_size: 512
-        img_root: /cache/coco/train2017
-        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_train.pkl
-        fea: /home/ma-user/work/lijiacheng/data/coco/feature_coco_clip_train.pkl
+        img_size: 288
+        crop_size: 256
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_train.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
     validation:
-      target: taming.data.coco.COCOFeature
+      target: taming.data.cub.CUBFeature
       params:
-        img_size: 576
-        crop_size: 512
         split: test
-        img_root: /cache/coco/val2017
-        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_val.pkl
-        fea: /home/ma-user/work/lijiacheng/data/coco/feature_coco_clip_val.pkl
+        img_size: 288
+        crop_size: 256
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_val.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl

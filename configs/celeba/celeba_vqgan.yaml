@@ -1,6 +1,7 @@
 model:
+  find_unused_parameters: True
   base_learning_rate: 1.44e-04
-  max_steps: 200000
+  max_steps: 120000
   target: taming.models.vqgan.VQModel
   params:
     embed_dim: 256

@@ -11,9 +11,8 @@ data: #CelebA
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]
         std: [0.26862954, 0.26130258, 0.27577711]
-        data_root: /home/ma-user/work/lijiacheng/data/coco/
-        img_root: train2017
-        meta: metadata_coco_train.pkl
+        img_root: /cache/coco/train2017
+        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_train.pkl
     validation:
       target: taming.data.coco.COCO
       params:
@@ -22,9 +21,8 @@ data: #CelebA
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]
         std: [0.26862954, 0.26130258, 0.27577711]
-        data_root: /home/ma-user/work/lijiacheng/data/coco/
-        img_root: val2017
-        meta: metadata_coco_val.pkl
+        img_root: /cache/coco/val2017
+        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_val.pkl
 
 clip_ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
 save_prefix: /data/s3/features/feature_coco_clip # will add .pkl automaticallly
