@@ -1,45 +1,45 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_steps: 100000
+  max_steps: 40000
   optimizer_params:
     type: Adafactor
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 100000
+    total_steps: 40000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
     css: 16
     w_layer: 12
     transformer_config:
-      target: taming.modules.transformer.sandwich.GPT
+      target: taming.modules.transformer.sparse.SparseGPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
-        block_size: 1024
+        block_size: 256
         text_vbs: 0
-        img_vbs: 2887
-        n_layer: 19
+        img_vbs: 1024
+        n_layer: 24
         n_head: 16
-        n_embd: 1024
+        n_embd: 768
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
         full_head: False
         add_cross: True
-        PBrelax: False
-        checkpoint: 19
+        PBrelax: True
+        checkpoint: 0
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
         freeze: True
         
     # taming VQGAN CelebA
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/vqgan_imagenet_f16_1024/vqgan_imagenet_f16_1024.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/cub/vqgan_cub_f16_1024.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:

@@ -32,7 +32,7 @@ model:
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
         freeze: True
         
 

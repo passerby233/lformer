@@ -64,7 +64,7 @@ class Attention(nn.Module):
             att = q * (1.0/ self.alpha / math.sqrt(k.size(-1))) @ k.transpose(-2, -1)
             att = (att - att.abs().max().detach()) * self.alpha
         else:
-            att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
+            att = (q  * (1.0 / math.sqrt(k.size(-1)))) @ k.transpose(-2, -1)
         if att_mask is not None and layer_past is None:
             att = att.masked_fill(att_mask[:,:,:T_q,:T_k] == 0, float('-inf'))
 
