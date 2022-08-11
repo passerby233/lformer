@@ -136,22 +136,24 @@ def main():
         if not os.path.exists(target_dir):
             os.makedirs(target_dir, exist_ok=True)
         prepare_cc3m(source_dir, target_dir)
+        print(os.listdir(target_dir))
     elif 'celeba' in args.base:
         source_dir = "s3://bucket-3947/lijiacheng/datasets/celeba/"
         target_dir = "/cache/"
         download_and_release(source_dir, target_dir, "CelebAMask-HQ.zip")
+        print(os.listdir(target_dir))
     elif 'coco' in args.base:
         source_dir = "s3://bucket-3947/lijiacheng/datasets/coco/"
         target_dir = '/cache/coco/'    
         for zipfile in ['annotations_trainval2017.zip', 'train2017.zip', 'val2017.zip']:
             download_and_release(source_dir, target_dir, zipfile)
+        print(os.listdir(target_dir))
 
     # wait for all node sync
-    print(os.listdir(target_dir))
     enter_node_barrier(args)
     #download("s3://bucket-3947/lijiacheng/pretrained", "/cache/pretrained")
     
-    # Running script
+    # Run the script
     cmd = f"python {args.main}"
     cmd = cmd + ' ' + ' '.join(extend_args)
     print("====> EXEC CMD", cmd)

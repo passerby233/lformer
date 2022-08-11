@@ -86,7 +86,7 @@ class SamplerWithCLIP(torch.nn.Module):
         if batch_size == 1:
             for t in range(candidate // fbs):
                 ex_text = text_idx.expand(fbs, -1) # repeat text  [B, L] 
-                img_idx[candidate*t:candidate*(t+1), :], text_feature = \
+                img_idx[fbs*t:fbs*(t+1), :], text_feature = \
                     self.model.sample(ex_text, top_k, top_p, temperature, 
                         return_feature=True, use_cache=use_cache)
         else:
@@ -103,7 +103,7 @@ class SamplerWithCLIP(torch.nn.Module):
         image_list = []
         img_t = img_t.view(batch_size, candidate, *img_t.shape[-3:])
         img_processed = img_processed.view(batch_size, candidate, *img_processed.shape[-3:])
-        text_feature = text_feature.view(batch_size, candidate, -1)
+        text_feature = text_feature.view(batch_size, -1, text_feature.shape[-1])
         for batch_idx in range(batch_size):
             s_img_t = img_t[batch_idx]
             s_img_processed = img_processed[batch_idx]

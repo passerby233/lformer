@@ -149,36 +149,6 @@ def get_parser():
         "to specify a custom datasets on the command line.")
     return parser
 
-def load_model_from_config(config, sd, gpu=True, eval_mode=True):
-    if "ckpt_path" in config.params:
-        st.warning("Deleting the restore-ckpt path from the config...")
-        config.params.ckpt_path = None
-    if "downsample_cond_size" in config.params:
-        st.warning("Deleting downsample-cond-size from the config and setting factor=0.5 instead...")
-        config.params.downsample_cond_size = -1
-        config.params["downsample_cond_factor"] = 0.5
-    try:
-        if "ckpt_path" in config.params.first_stage_config.params:
-            config.params.first_stage_config.params.ckpt_path = None
-            st.warning("Deleting the first-stage restore-ckpt path from the config...")
-        if "ckpt_path" in config.params.cond_stage_config.params:
-            config.params.cond_stage_config.params.ckpt_path = None
-            st.warning("Deleting the cond-stage restore-ckpt path from the config...")
-    except:
-        pass
-
-    model = instantiate_from_config(config)
-    if sd is not None:
-        missing, unexpected = model.load_state_dict(sd, strict=False)
-        st.info(f"Missing Keys in State Dict: {missing}")
-        st.info(f"Unexpected Keys in State Dict: {unexpected}")
-    if gpu:
-        model.cuda()
-    if eval_mode:
-        model.eval()
-    return {"model": model}
-
-
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_model_and_dset(config, ckpt, gpu, eval_mode):
     # get data
@@ -190,10 +160,11 @@ def load_model_and_dset(config, ckpt, gpu, eval_mode):
         sd = ckpt_dict["state_dict"]
     else:
         sd = convert_ckpt(ckpt_dict) # a state_dict with module.param
-    model = load_model_from_config(config.model,
-                                   sd,
-                                   gpu=False,
-                                   eval_mode=eval_mode)["model"]
+    model = instantiate_from_config(config.model)
+    missing, unexpected = model.load_state_dict(sd, strict=False)
+    st.info(f"Missing Keys in State Dict: {missing}")
+    st.info(f"Unexpected Keys in State Dict: {unexpected}")
+
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
     ranker = VisualEncoder(clip_ckpt_path)

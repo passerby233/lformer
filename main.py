@@ -54,7 +54,7 @@ if __name__ == "__main__":
         else:
             name = ""
         nowname = now+name+opt.postfix
-        output_dir = opt.train_url if 'MA_JOB_DIR' in os.environ.keys() else "/data/s3/logs"
+        output_dir = opt.train_url if opt.train_url is not None else "/data/s3/logs"
         logdir = os.path.join(output_dir, nowname)
 
     ckptdir = os.path.join(logdir, "checkpoints")
@@ -139,10 +139,13 @@ if __name__ == "__main__":
         # allow checkpointing via USR1
         def melk(*args, **kwargs):
             # run all checkpoint hooks
+            pass
+            """ 
             if trainer.global_rank == 0:
                 print("Summoning checkpoint.")
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 trainer.save_checkpoint(ckpt_path)
+            """    
 
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:

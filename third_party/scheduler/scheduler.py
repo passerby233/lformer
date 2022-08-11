@@ -19,7 +19,7 @@ class ReduceLROnPlateauWithWarmup(ReduceLROnPlateau):
             decreasing; in `max` mode it will be reduced when the
             quantity monitored has stopped increasing. Default: 'min'.
         factor (float): Factor by which the learning rate will be
-            reduced. new_lr = lr * factor. Default: 0.1.
+            reduced. new_lr = lr * factor. Default: 0.5.
         patience (int): Number of epochs with no improvement after
             which learning rate will be reduced. For example, if
             `patience = 2`, then we will ignore the first 2 epochs

@@ -149,14 +149,13 @@ class GenModel(pl.LightningModule):
         return optimizer
 
     def get_scheduler(self, optimizer, opt):
-        total_steps = opt.total_steps if opt.total_steps is not None \
-            else self.trainer.estimated_stepping_batches
         if opt.type == "OneCycle":    
             from torch.optim.lr_scheduler import OneCycleLR
             scheduler = OneCycleLR(
                 optimizer, 
                 max_lr=opt.max_lr,
-                total_steps=total_steps,
+                total_steps=opt.total_steps if opt.total_steps is not None \
+                            else self.trainer.estimated_stepping_batches,
                 pct_start=opt.pct_start,
                 cycle_momentum="momentum" in optimizer.defaults)
             scheduler = {"scheduler": scheduler, "interval":"step"}
@@ -164,7 +163,8 @@ class GenModel(pl.LightningModule):
             from transformers import get_cosine_schedule_with_warmup
             scheduler = get_cosine_schedule_with_warmup(
                 optimizer, 
-                num_warmup_steps=total_steps,
+                num_warmup_steps=opt.total_steps if opt.total_steps is not None \
+                                 else self.trainer.estimated_stepping_batches,
                 num_training_steps=opt.total_steps)
             scheduler = {"scheduler": scheduler, "interval":"step"}
         elif opt.type == 'ReduceLROnPlateauWithWarmup':

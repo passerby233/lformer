@@ -40,7 +40,7 @@ def test_sample(sampler, dataloader, opt):
 
 def sample_for_eval(sampler, dataloader, opt):
     device = "cuda" if opt.gpu else "cpu"
-    batch_size =dataloader.batch_size
+    batch_size = dataloader.batch_size
     if hasattr(sampler, 'module'):
         tokenizer = sampler.module.model.tokenizer
     else:
