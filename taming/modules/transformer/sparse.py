@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 from math import sqrt
 from deepspeed.ops.sparse_attention.sparsity_config import SparsityConfig
-from deepspeed.ops.sparse_attention import SparseSelfAttention
+from .att_util import SparseSelfAttention
 import deepspeed
 
 from .sandwich import LayerNorm, Attention, SandwichLayer, GPT
@@ -43,7 +43,8 @@ class SparseInnerAttetion(nn.Module):
                                                 css=css)
         self.inner_att = SparseSelfAttention(sparsity_config, 
                                             attn_mask_mode='add', 
-                                            max_seq_length=config.block_size)
+                                            max_seq_length=config.block_size,
+                                            PBrelax=config.PBrelax)
 
     def forward(self, q, k, v, att_mask):
         T_q = q.shape[2]

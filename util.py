@@ -249,7 +249,7 @@ def get_modelckpt_cfg(lightning_config, ckptdir):
             "filename": "{epoch:04}-{step:06}",
             "verbose": True,
             "save_last": True,
-            "every_n_epochs": 40,
+            #"every_n_epochs": 40,
             #"save_top_k": -1
         }
     }

@@ -1,12 +1,12 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
-  max_steps: 50000 # 50K steps budget
+  max_steps: 200000 # 50K steps budget
   optimizer_params:
     type: Adafactor #DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
-    max_lr: 1.0e-4
-    total_steps: 50000
+    max_lr: 2.0e-4
+    total_steps: 200000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
@@ -20,7 +20,7 @@ model:
         text_vbs: 0
         img_vbs: 8192
         n_layer: 24
-        n_head: 16
+        n_head: 8
         n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
@@ -44,13 +44,13 @@ model:
         ddconfig:
           double_z: false
           z_channels: 256
-          resolution: 512
+          resolution: 256
           in_channels: 3
           out_ch: 3
           ch: 128
           ch_mult: [1,1,2,2,4]
           num_res_blocks: 2
-          attn_resolutions: [32]
+          attn_resolutions: [16]
           dropout: 0.0
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
@@ -64,7 +64,7 @@ data: #CC3M
       target: taming.data.coco.COCOFeature
       params:
         split: train
-        img_size: 288
+        img_size: 256
         crop_size: 256
         img_root: /cache/coco/train2017
         meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_train.pkl
@@ -72,7 +72,7 @@ data: #CC3M
     validation:
       target: taming.data.coco.COCOFeature
       params:
-        img_size: 288
+        img_size: 256
         crop_size: 256
         split: test
         img_root: /cache/coco/val2017

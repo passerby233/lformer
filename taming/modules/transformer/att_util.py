@@ -148,12 +148,13 @@ class SparseSelfAttention(nn.Module):
         # cache look-up table computations etc
         sparse_dot_sdd_nt, sparse_dot_dsd_nn, sparse_softmax = self.get_ops(num_heads, tgt_len)
 
-        scaling = float(head_dim)**-0.5
+        scaling = float(head_dim)**-0.5 * 32
 
         # attention scores
-        attn_output_weights = sparse_dot_sdd_nt(query, key)
+        attn_output_weights = sparse_dot_sdd_nt(query/32, key)
         if self.PBrelax:
-            attn_output_weights = attn_output_weights - attn_output_weights.abs().max().detach()
+            max_value = attn_output_weights.view(*attn_output_weights.shape[:2], -1).abs().max(-1)[0].detach()
+            attn_output_weights = attn_output_weights - max_value[:,:,None,None]
         attn_output_weights = sparse_softmax(
             attn_output_weights,
             scale=scaling,
