@@ -11,18 +11,16 @@ class Lformer(GenModel):
                  css,
                  transformer_config,
                  first_stage_config,
-                 text_len=77,
+                 pkeep=1.0,
                  ckpt_path=None,
                  ignore_keys=[],
-                 pkeep=1.0
                  ):
         super().__init__(css,
                          transformer_config,
                          first_stage_config,
-                         pkeep
-                         )
-        self.text_len = text_len
-        self.pad_id = self.img_vbs + self.text_vbs
+                         pkeep) 
+
+        self.pad_id = self.img_vbs
         self.register_buffer("pos_ids", torch.arange(self.block_size).unsqueeze(0))
         self.register_buffer("att_mask", self.get_att_mask())
 

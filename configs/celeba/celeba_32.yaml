@@ -27,7 +27,7 @@ model:
         attn_pdrop: 0.1
         add_cross: True
         full_head: False
-        PBrelax: False
+        PBrelax: True
         checkpoint: 4
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder

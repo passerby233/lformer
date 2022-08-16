@@ -1,7 +1,7 @@
 """
 Copyright 2020 The Microsoft DeepSpeed Team
 """
-
+from turtle import width
 import torch.nn as nn
 from torch.nn.functional import *
 import torch
@@ -152,9 +152,11 @@ class SparseSelfAttention(nn.Module):
 
         # attention scores
         attn_output_weights = sparse_dot_sdd_nt(query/32, key)
+        raw_shape = attn_output_weights.shape
         if self.PBrelax:
-            max_value = attn_output_weights.view(*attn_output_weights.shape[:2], -1).abs().max(-1)[0].detach()
-            attn_output_weights = attn_output_weights - max_value[:,:,None,None]
+            attn_output_weights = attn_output_weights.view(bsz, num_heads, -1)
+            attn_output_weights = attn_output_weights - attn_output_weights.max(-1, keepdim=True)[0]
+            attn_output_weights = attn_output_weights.view(*raw_shape)
         attn_output_weights = sparse_softmax(
             attn_output_weights,
             scale=scaling,

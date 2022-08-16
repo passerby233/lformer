@@ -7,7 +7,7 @@ model:
     type: OneCycle
     max_lr: 2.0e-4
     total_steps: 300000
-    pct_start: 0.01
+    pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
     css: 32
@@ -32,7 +32,7 @@ model:
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/clip/ViT-B-16.pt
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
         freeze: True
         
     # taming VQGAN Openimages Shrinked to 2887

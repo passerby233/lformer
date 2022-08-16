@@ -1,0 +1,81 @@
+model:
+  base_learning_rate: 1.0e-06 # no_effect wit OneCycle
+  max_steps: 30000
+  optimizer_params:
+    type: Adafactor
+  scheduler_params:
+    type: OneCycle
+    max_lr: 2.0e-4
+    total_steps: 30000
+    pct_start: 0.02
+  target: taming.models.crosslformer.CrossLformerLatent
+  params:
+    css: 16
+    w_layer: 12
+    transformer_config:
+      target: taming.modules.transformer.sparse.SparseGPT
+      params:
+        dim_cond: 512 # num of dimensions of condition hidden
+        block_size: 256
+        text_vbs: 0
+        img_vbs: 1024
+        n_layer: 24
+        n_head: 7
+        n_embd: 448
+        embd_pdrop: 0.1
+        resid_pdrop: 0.1
+        attn_pdrop: 0.1
+        full_head: False
+        add_cross: True
+        PBrelax: True
+        checkpoint: 0
+    text_encoder_config:
+      target: taming.models.custom_clip.TextEncoder
+      params: 
+        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
+        freeze: True
+
+    # taming VQGAN CelebA
+    first_stage_config:
+      target: taming.models.vqgan.VQModel
+      params:
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/vqgan_imagenet_f16_1024/vqgan_imagenet_f16_1024.ckpt
+        embed_dim: 256
+        n_embed: 1024
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1,1,2,2,4]
+          num_res_blocks: 2
+          attn_resolutions: [16]
+          dropout: 0.0
+        lossconfig:
+          target: third_party.losses.vqperceptual.DummyLoss
+
+data:
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 3
+    num_workers: 8
+    train:
+      target: taming.data.cub.CUBFeature
+      params:
+        split: train
+        img_size: 288
+        crop_size: 256
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_train.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/train/304images.pkl
+    validation:
+      target: taming.data.cub.CUBFeature
+      params:
+        split: test
+        img_size: 288
+        crop_size: 256
+        meta: /home/ma-user/work/lijiacheng/data/birds/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/birds/feature_cub_clip_val.pkl
+        cache: /home/ma-user/work/lijiacheng/data/birds/test/304images.pkl
