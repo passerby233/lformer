@@ -26,7 +26,8 @@ def test_sample(sampler, dataloader, opt):
 
         print(f"Sampling for batch {i}")
         start_time = time.time()
-        image_sample = sampler(batch_text_idx, opt.num_s, opt.cdt, opt.fbs).detach().cpu()
+        image_sample = sampler(batch_text_idx, opt.num_s, opt.cdt, opt.fbs,
+                                opt.top_k, opt.top_p).detach().cpu()
         print(f"batch_{i} uses time: {time.time() - start_time}s")
         
         img_path = os.path.join(opt.out, f"imgs_batch_{i}.png")

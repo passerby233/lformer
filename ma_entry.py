@@ -150,7 +150,8 @@ def main():
         print(os.listdir(target_dir))
 
     # wait for all node sync
-    enter_node_barrier(args)
+    if 'cub' not in args.base:
+        enter_node_barrier(args)
     #download("s3://bucket-3947/lijiacheng/pretrained", "/cache/pretrained")
     
     # Run the script
