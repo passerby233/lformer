@@ -142,6 +142,16 @@ class ARModel(GenModel):
         text_list = self.textidx_to_text(text_idx)
         return log, text_list
 
+    def training_step(self, batch, batch_idx):
+        loss = self.shared_step(batch, batch_idx)
+        self.log("train/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        loss = self.shared_step(batch, batch_idx)
+        self.log("val/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        return loss
+
 class TrecARModel(ARModel):
     # Text Reconstruction Version
     def __init__(self,

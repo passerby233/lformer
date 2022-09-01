@@ -1,8 +1,6 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
   max_steps: 100000 # 100K steps budget
-  optimizer_params:
-    type: Adafactor #DeepSpeedCPUAdam
   scheduler_params:
     type: OneCycle
     max_lr: 3.0e-4

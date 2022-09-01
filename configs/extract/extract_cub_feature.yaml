@@ -6,6 +6,7 @@ data:
     train:
       target: taming.data.cub.CUB
       params:
+        split: train
         img_size: 256
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]
@@ -15,6 +16,7 @@ data:
     validation:
       target: taming.data.cub.CUB
       params:
+        split: test
         img_size: 256
         crop_size: 224
         mean: [0.48145466, 0.4578275, 0.40821073]

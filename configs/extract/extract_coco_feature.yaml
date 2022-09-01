@@ -1,4 +1,4 @@
-data: #CelebA
+data: #COCO
   target: taming.data.utils.DataModuleFromConfig
   params:
     batch_size: 32

@@ -1,8 +1,6 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
   max_steps: 30000
-  optimizer_params:
-    type: Adafactor
   scheduler_params:
     type: OneCycle
     max_lr: 2.0e-4
@@ -19,9 +17,9 @@ model:
         block_size: 256
         text_vbs: 0
         img_vbs: 1024
-        n_layer: 24
-        n_head: 7
-        n_embd: 448
+        n_layer: 40
+        n_head: 8
+        n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
@@ -59,7 +57,7 @@ model:
 data:
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 3
+    batch_size: 16
     num_workers: 8
     train:
       target: taming.data.cub.CUBFeature

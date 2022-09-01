@@ -1,0 +1,28 @@
+data: #Imagenet
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 200
+    num_workers: 20
+    train:
+      target: taming.data.imagenet.ImageNet
+      params:
+        split: train
+        img_size: 256
+        crop_size: 224
+        mean: [0.48145466, 0.4578275, 0.40821073]
+        std: [0.26862954, 0.26130258, 0.27577711]
+        img_root: /cache/imagenet/
+        meta: /home/ma-user/work/lijiacheng/data/imagenet/meta_imagenet_train.pkl
+    validation:
+      target: taming.data.imagenet.ImageNet
+      params:
+        split: val
+        img_size: 256
+        crop_size: 224
+        mean: [0.48145466, 0.4578275, 0.40821073]
+        std: [0.26862954, 0.26130258, 0.27577711]
+        img_root: /cache/imagenet/
+        meta: /home/ma-user/work/lijiacheng/data/imagenet/meta_imagenet_val.pkl
+
+clip_ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
+save_prefix: /home/ma-user/work/lijiacheng/data/imagenet/feature_imagenet # will add .pkl automaticallly

@@ -1,8 +1,6 @@
 model:
   base_learning_rate: 1.0e-06 # no_effect wit OneCycle
   max_steps: 100000
-  optimizer_params:
-    type: Adafactor
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4

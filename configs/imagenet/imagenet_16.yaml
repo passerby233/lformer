@@ -1,21 +1,21 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 30000
+  max_steps: 200000
   scheduler_params:
     type: OneCycle
-    max_lr: 2.0e-4
-    total_steps: 30000
+    max_lr: 1.0e-4
+    total_steps: 200000
     pct_start: 0.02
-  target: taming.models.crosslformer.CrossLformerLatent
+  target: taming.models.lformer.LformerLatent
   params:
     css: 16
     w_layer: 12
+    classes: 1000
     transformer_config:
       target: taming.modules.transformer.sparse.SparseGPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
-        block_size: 1024
-        text_vbs: 0
+        block_size: 256
         img_vbs: 1024
         n_layer: 24
         n_head: 16
@@ -23,21 +23,16 @@ model:
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
-        add_cross: True
+        add_cross: False
         full_head: False
         PBrelax: True
         checkpoint: 0
-    text_encoder_config:
-      target: taming.models.custom_clip.TextEncoder
-      params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
-        freeze: True
         
-    # taming VQGAN CelebA
+    # taming VQGAN Imagenet
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/faces/celeba_f16.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/vqgan_imagenet_f16_1024/vqgan_imagenet_f16_1024.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:
@@ -54,26 +49,26 @@ model:
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
 
-data: #CelebA
+data: #Imagenet
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 32
-    num_workers: 8
+    batch_size: 16
+    num_workers: 16
     train:
-      target: taming.data.celeba.CelebAFeature
+      target: taming.data.imagenet.ImageNetFeature
       params:
         split: train
-        img_size: 288
+        img_size: 256
         crop_size: 256
-        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
-        meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /cache/CelebAMask-HQ/feature_celeba_clip_train.pkl
+        img_root: /cache/imagenet/
+        meta: /home/ma-user/work/lijiacheng/data/imagenet/meta_imagenet_train.pkl
+        fea: /home/ma-user/work/lijiacheng/data/imagenet/feature_imagenet_train.pkl
     validation:
-      target: taming.data.celeba.CelebAFeature
+      target: taming.data.imagenet.ImageNetFeature
       params:
-        split: test
-        img_size: 288
+        split: val
+        img_size: 256
         crop_size: 256
-        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
-        meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /cache/CelebAMask-HQ/feature_celeba_clip_val.pkl
+        img_root: /cache/imagenet/
+        meta: /home/ma-user/work/lijiacheng/data/imagenet/meta_imagenet_val.pkl
+        fea: /home/ma-user/work/lijiacheng/data/imagenet/feature_imagenet_val.pkl

@@ -37,7 +37,8 @@ if __name__ == "__main__":
             f"Decode {image_time_point-code_time_point:.4}s")
         
         img_path = os.path.join(opt.out, f"imgs_batch_{i}.png")
-        save_image(img_t, img_path)
+        breakpoint()
+        save_image(img_t, img_path, nrow=4)
 
         text_path = os.path.join(opt.out, f"text_batch_{i}.txt")
         save_text(text_idx, model.tokenizer, text_path)

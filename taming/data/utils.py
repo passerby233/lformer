@@ -92,7 +92,8 @@ class DataModuleFromConfig(pl.LightningDataModule):
 
     def _train_dataloader(self):
         return DataLoader(self.datasets["train"], batch_size=self.batch_size,
-                          num_workers=self.num_workers, shuffle=True, collate_fn=custom_collate)
+                          num_workers=self.num_workers, shuffle=True, collate_fn=custom_collate,
+                          drop_last=True, pin_memory=True)
 
     def _val_dataloader(self):
         return DataLoader(self.datasets["validation"], batch_size=self.batch_size,

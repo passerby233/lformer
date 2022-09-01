@@ -30,7 +30,7 @@ def test_sample(sampler, dataloader, opt):
         print(f"batch_{i} uses time: {time.time() - start_time}s")
         
         img_path = os.path.join(opt.out, f"imgs_batch_{i}.png")
-        save_image(image_sample, img_path)
+        save_image(image_sample, img_path, nrow=4)
 
         text_path = os.path.join(opt.out, f"text_batch_{i}.txt")
         save_text(batch_text_idx, tokenizer, text_path)

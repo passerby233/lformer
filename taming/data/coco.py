@@ -4,7 +4,7 @@ from .utils import WrappedDataset
 
 class COCO(WrappedDataset):
     def __init__(self, img_root=None, meta=None, fea=None,
-                 img_size=288, crop_size=256, 
+                 img_size=256, crop_size=256, 
                  mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], 
                  split='train'):
         super().__init__(img_root, meta, fea, 
@@ -32,7 +32,7 @@ class COCO(WrappedDataset):
 
 class COCOFeature(COCO):
     def __init__(self, img_root=None, meta=None, fea=None,
-                 img_size=288, crop_size=256, 
+                 img_size=256, crop_size=256, 
                  mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], 
                  split='train'):
         super().__init__(img_root, meta, fea, 
