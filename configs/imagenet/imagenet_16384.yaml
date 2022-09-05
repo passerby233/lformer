@@ -1,0 +1,75 @@
+model:
+  base_learning_rate: 1.0e-6
+  max_steps: 200000
+  scheduler_params:
+    type: OneCycle
+    max_lr: 1.0e-4
+    total_steps: 200000
+    pct_start: 0.02
+  target: taming.models.lformer.LformerLatent
+  params:
+    css: 16
+    w_layer: 12
+    classes: 1000
+    transformer_config:
+      target: taming.modules.transformer.sparse.SparseGPT
+      params:
+        dim_cond: 512 # num of dimensions of condition hidden
+        block_size: 256
+        text_vbs: 0
+        img_vbs: 16384
+        n_layer: 24
+        n_head: 16
+        n_embd: 1024
+        embd_pdrop: 0.1
+        resid_pdrop: 0.1
+        attn_pdrop: 0.1
+        add_cross: False
+        full_head: False
+        PBrelax: True
+        checkpoint: 6
+        
+    # taming VQGAN Imagenet
+    first_stage_config:
+      target: taming.models.vqgan.VQModel
+      params:
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/vqgan_imagenet_f16_16384/vqgan_imagenet_f16_16384.ckpt
+        embed_dim: 256
+        n_embed: 16384
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1,1,2,2,4]
+          num_res_blocks: 2
+          attn_resolutions: [16]
+          dropout: 0.0
+        lossconfig:
+          target: third_party.losses.vqperceptual.DummyLoss
+
+data: #Imagenet
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 32
+    num_workers: 16
+    train:
+      target: taming.data.imagenet.ImageNetFeature
+      params:
+        split: train
+        img_size: 256
+        crop_size: 256
+        img_root: /cache/imagenet/
+        meta: /home/ma-user/work/lijiacheng/data/imagenet/meta_imagenet_train.pkl
+        fea: /home/ma-user/work/lijiacheng/data/imagenet/feature_imagenet_train.pkl
+    validation:
+      target: taming.data.imagenet.ImageNetFeature
+      params:
+        split: val
+        img_size: 256
+        crop_size: 256
+        img_root: /cache/imagenet/
+        meta: /home/ma-user/work/lijiacheng/data/imagenet/meta_imagenet_val.pkl
+        fea: /home/ma-user/work/lijiacheng/data/imagenet/feature_imagenet_val.pkl

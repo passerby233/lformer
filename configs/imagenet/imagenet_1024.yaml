@@ -3,7 +3,7 @@ model:
   max_steps: 200000
   scheduler_params:
     type: OneCycle
-    max_lr: 1.0e-4
+    max_lr: 2.0e-4
     total_steps: 200000
     pct_start: 0.02
   target: taming.models.lformer.LformerLatent
@@ -16,6 +16,7 @@ model:
       params:
         dim_cond: 512 # num of dimensions of condition hidden
         block_size: 256
+        text_vbs: 0
         img_vbs: 1024
         n_layer: 24
         n_head: 16
@@ -26,7 +27,7 @@ model:
         add_cross: False
         full_head: False
         PBrelax: True
-        checkpoint: 0
+        checkpoint: 24
         
     # taming VQGAN Imagenet
     first_stage_config:
@@ -52,7 +53,7 @@ model:
 data: #Imagenet
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 16
+    batch_size: 64
     num_workers: 16
     train:
       target: taming.data.imagenet.ImageNetFeature

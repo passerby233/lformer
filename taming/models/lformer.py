@@ -66,7 +66,8 @@ class LformerLatent(GenModel, LformerBase):
         padded = self.pad_Ltoken(Ltoken)
         logits, KLD = self(label_emb, padded, img_feature)
         CE = F.cross_entropy(logits.reshape(-1, logits.size(-1)), Ltoken.reshape(-1))
-        loss = CE + KLD
+        loss_weight = self.current_epoch / 100 
+        loss = CE + KLD * loss_weight
         return loss, KLD
 
     def get_context(self, label_emb, img_feature=None):

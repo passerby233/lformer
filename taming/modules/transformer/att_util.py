@@ -125,7 +125,7 @@ class SparseSelfAttention(nn.Module):
         Return:
              attn_output: a dense tensor containing attention context
         """
-        assert query.dtype == torch.half, "sparse attention only supports training in fp16 currently, please file a github issue if you need fp32 support"
+        #assert query.dtype == torch.half, "sparse attention only supports training in fp16 currently, please file a github issue if you need fp32 support"
         bsz, num_heads, tgt_len, head_dim = query.size()
 
         # transpose back key if it is already transposed
@@ -155,7 +155,7 @@ class SparseSelfAttention(nn.Module):
         raw_shape = attn_output_weights.shape
         if self.PBrelax:
             attn_output_weights = attn_output_weights.view(bsz, num_heads, -1)
-            attn_output_weights = attn_output_weights - attn_output_weights.max(-1, keepdim=True)[0]
+            attn_output_weights = attn_output_weights - attn_output_weights.max(-1, keepdim=True)[0].detach()
             attn_output_weights = attn_output_weights.view(*raw_shape)
         attn_output_weights = sparse_softmax(
             attn_output_weights,
@@ -168,4 +168,6 @@ class SparseSelfAttention(nn.Module):
 
         # outputs
         attn_output = sparse_dot_dsd_nn(attn_output_weights, value)
+        #print(attn_output[0,0,:10,:10]) # for check
+        #breakpoint()
         return attn_output
