@@ -6,8 +6,8 @@ import numpy as np
 import moxing as mox
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-#os.environ["NCCL_NSOCKS_PERTHREAD"] = "4"
-#os.environ["NCCL_SOCKET_NTHREADS"] = "2"
+os.environ["NCCL_NSOCKS_PERTHREAD"] = "4"
+os.environ["NCCL_SOCKET_NTHREADS"] = "2"
 
 def str2bool(v):
     if isinstance(v, bool):
