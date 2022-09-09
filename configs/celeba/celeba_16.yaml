@@ -57,23 +57,23 @@ model:
 data: #CelebA
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 32
-    num_workers: 8
+    batch_size: 64
+    num_workers: 16
     train:
       target: taming.data.celeba.CelebAFeature
       params:
         split: train
         img_size: 288
         crop_size: 256
-        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
-        meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /cache/CelebAMask-HQ/feature_celeba_clip_train.pkl
+        img_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/CelebA-HQ-img
+        meta: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/feature_celeba_clip_train.pkl
     validation:
       target: taming.data.celeba.CelebAFeature
       params:
         split: test
         img_size: 288
         crop_size: 256
-        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
-        meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /cache/CelebAMask-HQ/feature_celeba_clip_val.pkl
+        img_root: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/CelebA-HQ-img
+        meta: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/feature_celeba_clip_val.pkl

@@ -8,10 +8,10 @@ from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 from PIL import Image
 
-from sample_utils import get_parser, get_config, save_text
-from sample_utils import load_model_and_data
+from sample_utils import get_parser, get_config, save_text, load_model
 from sample_utils import SamplerWithCLIP
 from taming.models.custom_clip import clip_transform, VisualEncoder
+from util import instantiate_from_config
 
 def test_sample(sampler, dataloader, opt):
     device = "cuda" if opt.gpu else "cpu"
@@ -53,12 +53,11 @@ def sample_for_eval(sampler, dataloader, opt):
         image_sample = sampler(batch_text_idx, opt.num_s, opt.cdt, opt.fbs).detach().cpu()
         image_batch = image_sample.mul(255).add_(0.5).clamp_(0, 255).permute(0, 2, 3, 1).to(torch.uint8)
         for local_idx, img_t in enumerate(image_batch):
-            global_idx = batch_idx * batch_size + local_idx
-            imgpath = os.path.join(opt.out, f"{global_idx}.png")
-            txtpath = os.path.join(opt.out, f"{global_idx}.txt")
+            caption = tokenizer.decode(batch_text_idx[local_idx].detach().cpu().numpy())
+            caption = caption.strip('<|startoftext|>').rstrip('<|endoftext|>')
+            imgpath = os.path.join(opt.out, f"{caption}.png")
             Image.fromarray(img_t.numpy()).save(imgpath)
-            save_text(batch_text_idx, tokenizer, txtpath)
-        if batch_idx > 3:
+        if batch_idx > 5:
             break
     print(f"Generating {len(dataloader.dataset)} images uses {time.time()-start:.4}s")
 
@@ -70,8 +69,9 @@ if __name__ == "__main__":
     config, ckpt = get_config(opt, unknown)
 
     # Load Model and Data
-    model, data = load_model_and_data(config, ckpt)
-    dataloader = DataLoader(data.datasets['validation'], batch_size=opt.bs, pin_memory=True)
+    model = load_model(config, ckpt)
+    dataset = instantiate_from_config(config.data.params.validation)
+    dataloader = DataLoader(dataset, batch_size=opt.bs, pin_memory=True)
 
     # Wrap CLIP model for ranking
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"

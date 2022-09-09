@@ -12,7 +12,7 @@ import streamlit as st
 from streamlit import caching
 
 from util import instantiate_from_config
-from sample_utils import SamplerWithCLIP, get_config, get_data, convert_ckpt
+from sample_utils import SamplerWithCLIP, get_config, get_data, load_model
 from taming.models.custom_clip import clip_transform, VisualEncoder
 
 rescale = lambda x: (x + 1.) / 2.
@@ -150,21 +150,10 @@ def get_parser():
     return parser
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
-def load_model_and_dset(config, ckpt, gpu, eval_mode):
+def load_model_and_dset(config, ckpt, gpu, eval_mode=True):
     # get data
     dsets = get_data(config)   # calls data.config ...
-
-    # now load the specified checkpoint
-    ckpt_dict = torch.load(ckpt, map_location="cpu")
-    if "state_dict" in ckpt_dict:
-        sd = ckpt_dict["state_dict"]
-    else:
-        sd = convert_ckpt(ckpt_dict) # a state_dict with module.param
-    model = instantiate_from_config(config.model)
-    missing, unexpected = model.load_state_dict(sd, strict=False)
-    st.info(f"Missing Keys in State Dict: {missing}")
-    st.info(f"Unexpected Keys in State Dict: {unexpected}")
-
+    model = load_model(config, ckpt, gpu, eval_mode)
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
     ranker = VisualEncoder(clip_ckpt_path)

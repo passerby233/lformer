@@ -148,6 +148,12 @@ def main():
         for zipfile in ['annotations_trainval2017.zip', 'train2017.zip', 'val2017.zip']:
             download_and_release(source_dir, target_dir, zipfile)
         print(os.listdir(target_dir))
+    elif 'imagenet' in args.base:
+        source_dir = "s3://bucket-3947/wenyijiang/mycode/sunshikun/Data/ImageNet/"
+        target_dir = '/cache/imagenet/'    
+        for zipfile in ['val.tar', 'train.tar']:
+            download_and_release(source_dir, target_dir, zipfile)
+        print(os.listdir(target_dir))
 
     # wait for all node sync
     if 'cub' not in args.base:

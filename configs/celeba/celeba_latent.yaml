@@ -1,23 +1,23 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 60000
+  max_steps: 40000
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 60000
+    total_steps: 40000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
     css: 32
     w_layer: 12
     transformer_config:
-      target: taming.modules.transformer.sandwich.GPT
+      target: taming.modules.transformer.sparse.SparseGPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
         block_size: 1024
         text_vbs: 0
         img_vbs: 1024
-        n_layer: 19
+        n_layer: 24
         n_head: 16
         n_embd: 1024
         embd_pdrop: 0.1
@@ -25,8 +25,8 @@ model:
         attn_pdrop: 0.1
         add_cross: True
         full_head: False
-        PBrelax: False
-        checkpoint: 16
+        PBrelax: True
+        checkpoint: 0
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 

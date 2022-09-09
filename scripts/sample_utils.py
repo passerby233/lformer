@@ -50,7 +50,7 @@ def get_parser():
     parser.add_argument("--cache", type=str2bool, default=True, help="whether to use cache")
     parser.add_argument("--top_k", type=int, default=512, help="probability truncate")       
     parser.add_argument("--top_p", type=float, default=0.9, help="nucleus sampling")
-    parser.add_argument("--eval", type=str2bool, default=False, help="nucleus sampling")                    
+    parser.add_argument("--eval", type=str2bool, default=True, help="eval for sample.py")                    
 
     parser.add_argument("-b", "--base", nargs="*", metavar="base_config.yaml",
         help="paths to base configs. Loaded from left-to-right. "
@@ -133,16 +133,17 @@ def sample(model, *args, **kargs):
     img_t = model.decode_to_img(img_idx)
     return img_t
 
-def load_model_and_data(config, ckpt, gpu=False, eval=True):
-    data = instantiate_from_config(config.data)
-    data.setup()
-
+def load_model(config, ckpt, gpu=False, eval=True):
     ckpt_dict = torch.load(ckpt, map_location="cpu")
     if "state_dict" in ckpt_dict:
         sd = ckpt_dict["state_dict"]
     else:
         sd = convert_ckpt(ckpt_dict) # a state_dict with module.param
 
+    config.model.params.transformer_config.target = \
+        config.model.params.transformer_config.target.replace("sparse.SparseGPT", "sandwich.GPT")
+    config.model.params.transformer_config.params.checkpoint = 0
+    config.model.params.transformer_config.params.PBrelax = False
     model = instantiate_from_config(config.model)
     model.load_state_dict(sd, strict=False)
     if gpu:
@@ -150,7 +151,7 @@ def load_model_and_data(config, ckpt, gpu=False, eval=True):
         #model = torch.nn.DataParallel(model)
     if eval:
         model.eval()
-    return model, data
+    return model
 
 def get_config(opt, unknown):
     ckpt = None

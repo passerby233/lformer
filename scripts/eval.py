@@ -1,16 +1,17 @@
-import argparse, os, sys, glob, math, time
+import argparse, os, sys, time
 dirname = os.path.dirname(__file__)
 os.chdir(os.path.join(dirname, os.path.pardir))
 sys.path.insert(0, os.getcwd())
 
 import torch
-import torch.nn as nn
-import numpy as np
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
 from torchmetrics.image.fid import FrechetInceptionDistance
-
-from util import instantiate_from_config
-from sample_utils import SamplerWithCLIP, get_config, get_data, convert_ckpt
-from taming.models.custom_clip import clip_transform, VisualEncoder
+from torchmetrics.image.inception import InceptionScore
+import torchvision.transforms as transforms
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings('ignore')
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -31,41 +32,75 @@ def get_parser():
         "--ignore_base_data", action="store_true",
         help="Ignore data specification from base configs. Useful if you want "
         "to specify a custom datasets on the command line.")
+    parser.add_argument("--batch", type=int, default=256)
+    parser.add_argument("--path1", type=str, default="/mnt/lijiacheng/data/coco/val2017/")
+    parser.add_argument("--path2", type=str, help="path contains images")
+    parser.add_argument("--gpus", type=str, help="which gpus to use")
     return parser
  
+class Imageset(Dataset):
+    'Characterizes a dataset for PyTorch'
+
+    def __init__(self, path, transform=None):
+        'Initialization'
+        self.file_names = self.get_filenames(path)
+        self.transform = transform
+
+    def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.file_names)
+
+    def __getitem__(self, index):
+        'Generates one sample of data'
+        filename = self.file_names[index]
+        img = Image.open(filename).convert('RGB')
+        caption = filename.strip('.png').strip('.jpg')
+        # Convert image and label to torch tensors
+        if self.transform is not None:
+            img = self.transform(img)
+        example = {'img': img, 'caption': caption}
+        return example
+
+    def get_filenames(self, data_path):
+        images = []
+        for path, subdirs, files in os.walk(data_path):
+            for name in files:
+                if name.rfind('jpg') != -1 or name.rfind('png') != -1:
+                    filename = os.path.join(path, name)
+                    if os.path.isfile(filename):
+                        images.append(filename)
+        return images
+
 if __name__ == "__main__":
     parser = get_parser()
-    opt, unknown = parser.parse_known_args()
-    config, ckpt = get_config(opt, unknown)
-    
-    # load data and model
-    data = get_data(config) 
-    valset = data['validation']
+    args, unknown = parser.parse_known_args()
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+    print(f"path1={args.path1}")
+    print(f"path2={args.path2}")
 
-    ckpt_dict = torch.load(ckpt, map_location="cpu")
-    if "state_dict" in ckpt_dict:
-        sd = ckpt_dict["state_dict"]
-    else:
-        sd = convert_ckpt(ckpt_dict) # a state_dict with module.param
-    model = instantiate_from_config(config)
-    missing, unexpected = model.load_state_dict(sd, strict=False)
-    print(f"missing = {missing}, unexpected={unexpected}")
-    model.eval()
-
-    # load clip visual encoder to get full sampler
-    clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
-    print(f"Restored from {clip_ckpt_path}")
-    ranker = VisualEncoder(clip_ckpt_path)
-    sampler = SamplerWithCLIP(model, ranker, clip_transform)
-    sampler = nn.DataParallel(sampler).cuda()
-
-    """
-    # prepare for evaluation
-    sample_size = 64
-    forward_size = 32
-    _ = torch.manual_seed(23)
+    dataset1 = Imageset(args.path1, transforms.Compose([
+            transforms.Resize((299, 299)),
+            transforms.PILToTensor(),
+        ]))
+    dataset2 = Imageset(args.path2, transforms.Compose([
+            transforms.Resize((299, 299)),
+            transforms.PILToTensor(),
+        ]))
+    dataloader1 = DataLoader(dataset=dataset1, batch_size=args.batch, shuffle=False,
+                            drop_last=False, num_workers=16, pin_memory=True)
+    dataloader2 = DataLoader(dataset=dataset2, batch_size=args.batch, shuffle=False,
+                            drop_last=False, num_workers=16, pin_memory=True)
+    print(f"num of dataset1: {len(dataset1)}, num of dataset2: {len(dataset2)}")
+    torch.manual_seed(23)
     fid = FrechetInceptionDistance(feature=2048).cuda()
-    for batch in valset:
-        text_idx = batch['text_idx'].cuda()
-        image_sample = sampler(text_idx, 1, sample_size, forward_size)
-    """
+    inception = InceptionScore(feature=2048).cuda()
+
+    for batch in tqdm(dataloader1):
+        fid.update(batch['img'].cuda(), real=True)
+    for batch in tqdm(dataloader2):
+        imgs = batch['img'].cuda()
+        fid.update(imgs, real=False)
+        inception.update(imgs)
+    fid_score = fid.compute()
+    inception_score = inception.compute()
+    print(f"FID score={fid_score.item()}, Inception Score={inception_score}")

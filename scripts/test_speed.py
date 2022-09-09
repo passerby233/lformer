@@ -5,7 +5,8 @@ sys.path.append(os.getcwd())
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 
-from sample_utils import get_parser, get_config, load_model_and_data, save_text
+from sample_utils import get_parser, get_config, save_text, load_model
+from util import instantiate_from_config
 
 if __name__ == "__main__":
     parser = get_parser()
@@ -16,8 +17,9 @@ if __name__ == "__main__":
         opt.out = "/mnt/lijiacheng/logs/sample/"
     os.makedirs(opt.out, exist_ok=True)
 
-    model, data = load_model_and_data(config, ckpt, opt.gpu)
-    dataloader = DataLoader(data.datasets['validation'], batch_size=opt.bs, pin_memory=True)
+    model = load_model(config, ckpt)
+    dataset = instantiate_from_config(config.data.params.validation)
+    dataloader = DataLoader(dataset, batch_size=opt.bs, pin_memory=True)
     time_list = []
 
     print("Testing on time:")
@@ -37,7 +39,6 @@ if __name__ == "__main__":
             f"Decode {image_time_point-code_time_point:.4}s")
         
         img_path = os.path.join(opt.out, f"imgs_batch_{i}.png")
-        breakpoint()
         save_image(img_t, img_path, nrow=4)
 
         text_path = os.path.join(opt.out, f"text_batch_{i}.txt")
