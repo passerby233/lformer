@@ -35,7 +35,7 @@ def get_parser():
     parser.add_argument("--batch", type=int, default=256)
     parser.add_argument("--path1", type=str, default="/mnt/lijiacheng/data/coco/val2017/")
     parser.add_argument("--path2", type=str, help="path contains images")
-    parser.add_argument("--gpus", type=str, help="which gpus to use")
+    parser.add_argument("--gpus", type=str, default="0", help="which gpus to use")
     return parser
  
 class Imageset(Dataset):
@@ -74,7 +74,8 @@ class Imageset(Dataset):
 if __name__ == "__main__":
     parser = get_parser()
     args, unknown = parser.parse_known_args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+    if len(args.gpus) > 0:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
     print(f"path1={args.path1}")
     print(f"path2={args.path2}")
 
@@ -104,3 +105,7 @@ if __name__ == "__main__":
     fid_score = fid.compute()
     inception_score = inception.compute()
     print(f"FID score={fid_score.item()}, Inception Score={inception_score}")
+
+    del fid, inception
+    torch.cuda.empty_cache()
+    os.system(f"python scripts/clip_score.py --path2={args.path2} --gpus=0")

@@ -9,8 +9,8 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
-from eval import get_parser
-from eval import Imageset
+from torchmetric import get_parser
+from torchmetric import Imageset
 from third_party.clip.clip import _transform, CLIPTokenizer
 
 if __name__ == "__main__":

@@ -47,9 +47,10 @@ def get_parser():
     parser.add_argument("--fbs", type=int, default=32, help="num_of_forward_batch_size_per_step")
     parser.add_argument("--out", type=str, default="/home/ma-user/work/lijiacheng/logs/sample/", 
                         help="img_output_path")
+    parser.add_argument("--num_a", type=int, default=5000, help="num_of_all_samples_for_eval")
     parser.add_argument("--cache", type=str2bool, default=True, help="whether to use cache")
     parser.add_argument("--top_k", type=int, default=512, help="probability truncate")       
-    parser.add_argument("--top_p", type=float, default=0.9, help="nucleus sampling")
+    parser.add_argument("--top_p", type=float, default=0.85, help="nucleus sampling")
     parser.add_argument("--eval", type=str2bool, default=True, help="eval for sample.py")                    
 
     parser.add_argument("-b", "--base", nargs="*", metavar="base_config.yaml",
