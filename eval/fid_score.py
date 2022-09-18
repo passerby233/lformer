@@ -58,7 +58,7 @@ parser.add_argument('--dims', type=int, default=2048,
                           'By default, uses pool3 features'))
 parser.add_argument('-c', '--gpu', default='0', type=str,
                     help='GPU to use (leave blank for CPU only)')
-parser.add_argument('--path1', type=str, default=64)
+parser.add_argument('--path1', type=str, default="/home/ma-user/work/lijiacheng/data/coco/mean_sigma_coco_val2014.npz")
 parser.add_argument('--path2', type=str, default=64)
 
 def get_activations(images, model, batch_size=256, dims=2048, cuda=False, verbose=True):
@@ -221,6 +221,7 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
         print(dataset.__len__())
         dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=16)
         m, s = calculate_activation_statistics(dataloader, model, batch_size, dims, cuda)
+        #np.savez("eval/mean_sigma_coco_val2014.npz", mu=m, sigma=s)
     return m, s
 
 def calculate_fid_given_paths(paths, batch_size, cuda, dims):
@@ -242,6 +243,14 @@ def calculate_fid_given_paths(paths, batch_size, cuda, dims):
     return fid_value
 
 if __name__ == '__main__':
+    source_dir = os.environ['HOME'] + "/work/lijiacheng/pretrained/inception_v3_google-1a9a5a14.pth"
+    target_dir = os.environ['HOME'] + "/.cache/torch/hub/checkpoints/inception_v3_google-1a9a5a14.pth"
+    if not os.path.exists(target_dir):
+        os.makedirs("/home/ma-user/.cache/torch/hub/checkpoints/", exist_ok=True)
+        import moxing as mox
+        mox.file.copy_parallel(source_dir, target_dir)
+        print(f"copy {source_dir} to {target_dir} succeeded.")  
+
     args = parser.parse_args()
     paths = ["",""]
     paths[0] = args.path1

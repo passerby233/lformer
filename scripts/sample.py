@@ -50,7 +50,8 @@ def sample_for_eval(sampler, dataloader, args):
     start = time.time()
     for batch_idx, batch in enumerate(dataloader):
         batch_text_idx = batch['text_idx'].to(device)
-        image_sample = sampler(batch_text_idx, args.num_s, args.cdt, args.fbs).detach().cpu()
+        image_sample = sampler(batch_text_idx, args.num_s, args.cdt, args.fbs,
+                               args.top_k, args.top_p).detach().cpu()
         image_batch = image_sample.mul(255).add_(0.5).clamp_(0, 255).permute(0, 2, 3, 1).to(torch.uint8)
         for local_idx, img_t in enumerate(image_batch):
             global_idx = batch_idx * args.bs + local_idx
@@ -58,7 +59,8 @@ def sample_for_eval(sampler, dataloader, args):
                 break
             caption = tokenizer.decode(batch_text_idx[local_idx].detach().cpu().numpy())
             caption = caption.strip('<|startoftext|>').rstrip('<|endoftext|>')
-            imgpath = os.path.join(args.out, f"{caption}.png")
+            caption = caption.replace('/', ' ')
+            imgpath = os.path.join(args.out, f"{caption[:200]}.png")
             Image.fromarray(img_t.numpy()).save(imgpath)
         if global_idx >= args.num_a:
             break

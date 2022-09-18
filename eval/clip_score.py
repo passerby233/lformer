@@ -22,7 +22,6 @@ if __name__ == "__main__":
     dataset = Imageset(args.path2, transform)
     dataloader = DataLoader(dataset=dataset, batch_size=args.batch, shuffle=False,
                             drop_last=False, num_workers=16, pin_memory=True)
-    print(f"num of dataset1: {len(dataset)}, num of dataset2: {len(dataset)}")
     torch.manual_seed(23)
 
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
