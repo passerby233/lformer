@@ -55,6 +55,7 @@ class Imageset(Dataset):
         filename = self.file_names[index]
         img = Image.open(filename).convert('RGB')
         caption = filename.strip('.png').strip('.jpg')
+        caption = filename.split('/')[-1].rstrip('.png').rstrip('.jpg').strip()
         # Convert image and label to torch tensors
         if self.transform is not None:
             img = self.transform(img)

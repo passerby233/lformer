@@ -1,10 +1,10 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 200000
+  max_steps: 100000
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 200000
+    total_steps: 100000
     pct_start: 0.02
   target: taming.models.lformer.LformerLatent
   params:
@@ -12,7 +12,7 @@ model:
     w_layer: 12
     classes: 1000
     transformer_config:
-      target: taming.modules.transformer.sparse.SparseGPT
+      target: taming.modules.transformer.sandwich.GPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
         block_size: 256
@@ -26,8 +26,8 @@ model:
         attn_pdrop: 0.1
         add_cross: False
         full_head: False
-        PBrelax: True
-        checkpoint: 6
+        PBrelax: False
+        checkpoint: 4
         
     # taming VQGAN Imagenet
     first_stage_config:
@@ -54,7 +54,7 @@ data: #Imagenet
   target: taming.data.utils.DataModuleFromConfig
   params:
     batch_size: 32
-    num_workers: 16
+    num_workers: 8
     train:
       target: taming.data.imagenet.ImageNetFeature
       params:

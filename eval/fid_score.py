@@ -218,7 +218,7 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
             transforms.Resize((299, 299)),
             transforms.ToTensor(),
         ]))
-        print(dataset.__len__())
+        print(f"length of {path}={len(dataset)}")
         dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=16)
         m, s = calculate_activation_statistics(dataloader, model, batch_size, dims, cuda)
         #np.savez("eval/mean_sigma_coco_val2014.npz", mu=m, sigma=s)

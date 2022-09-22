@@ -1,4 +1,4 @@
-import os, sys, glob, time
+import os, sys,  time
 dirname, filename = os.path.split(os.path.abspath(__file__))
 os.chdir(os.path.join(dirname, os.path.pardir))
 sys.path.append(os.getcwd())
@@ -27,7 +27,7 @@ def test_sample(sampler, dataloader, args):
         print(f"Sampling for batch {i}")
         start_time = time.time()
         image_sample = sampler(batch_text_idx, args.num_s, args.cdt, args.fbs,
-                                args.top_k, args.top_p).detach().cpu()
+                                args.top_k, args.top_p, lambda_=args.lambda_).detach().cpu()
         print(f"batch_{i} uses time: {time.time() - start_time}s")
         
         img_path = os.path.join(args.out, f"imgs_batch_{i}.png")
@@ -41,7 +41,6 @@ def test_sample(sampler, dataloader, args):
 
 def sample_for_eval(sampler, dataloader, args):
     device = "cuda" if args.gpu else "cpu"
-    batch_size = dataloader.batch_size
     if hasattr(sampler, 'module'):
         tokenizer = sampler.module.model.tokenizer
     else:
@@ -51,7 +50,7 @@ def sample_for_eval(sampler, dataloader, args):
     for batch_idx, batch in enumerate(dataloader):
         batch_text_idx = batch['text_idx'].to(device)
         image_sample = sampler(batch_text_idx, args.num_s, args.cdt, args.fbs,
-                               args.top_k, args.top_p).detach().cpu()
+                               args.top_k, args.top_p, lambda_=args.lambda_).detach().cpu()
         image_batch = image_sample.mul(255).add_(0.5).clamp_(0, 255).permute(0, 2, 3, 1).to(torch.uint8)
         for local_idx, img_t in enumerate(image_batch):
             global_idx = batch_idx * args.bs + local_idx
@@ -62,9 +61,10 @@ def sample_for_eval(sampler, dataloader, args):
             caption = caption.replace('/', ' ')
             imgpath = os.path.join(args.out, f"{caption[:200]}.png")
             Image.fromarray(img_t.numpy()).save(imgpath)
+            print(f"Image {global_idx} Generated.")
         if global_idx >= args.num_a:
             break
-    print(f"Generating {len(dataloader.dataset)} images uses {time.time()-start:.4}s")
+    print(f"Generating {global_idx} images uses {time.time()-start:.4}s")
 
 
 if __name__ == "__main__":

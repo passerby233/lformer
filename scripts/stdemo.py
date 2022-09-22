@@ -3,15 +3,12 @@ dirname = os.path.dirname(__file__)
 os.chdir(os.path.join(dirname, os.path.pardir))
 sys.path.insert(0, os.getcwd())
 import torch
-import torch.nn as nn
 import numpy as np
 from omegaconf import OmegaConf
 from PIL import Image
 from torch.utils.data.dataloader import default_collate
 import streamlit as st
-from streamlit import caching
 
-from util import instantiate_from_config
 from sample_utils import SamplerWithCLIP, get_config, get_data, load_model
 from taming.models.custom_clip import clip_transform, VisualEncoder
 
@@ -85,6 +82,7 @@ def run_conditional(sampler, dsets):
     candidate = st.sidebar.number_input("candidate", value=32)
     fbs = st.sidebar.number_input("forward_batch_size", value=32)
     num_out = st.sidebar.number_input("num_out", value=4)
+    lambda_ = st.sidebar.number_input("lambda_", value=0.0)
     #greedy = st.checkbox("Greedy", value=False)
 
     device = next(sampler.parameters()).device
@@ -116,7 +114,7 @@ def run_conditional(sampler, dsets):
         # Sample images
         start_t = time.time()
         xout = sampler(text_idx, num_out, candidate, 
-                        fbs, top_k, top_p, temperature)
+                        fbs, top_k, top_p, temperature, lambda_)
         time_txt.text(f"Time: {time.time() - start_t} seconds")
         xout = bchw_to_st(xout)
         output.image(xout, clamp=True, output_format="PNG")

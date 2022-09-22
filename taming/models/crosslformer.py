@@ -38,41 +38,57 @@ class Lformer(GenModel, LformerBase):
         
     @torch.no_grad()
     def cached_single_step(self, text_hidden, padded, t, past=None, context=None,
-                          top_k=None, top_p=0.8, temperature=1.0, greedy=False):
+                          top_k=512, top_p=0.8, temperature=1.0, greedy=False,
+                          _lambda=0.0, un_past=None, un_context=None):
         assert past is not None or context is not None
         pos_ids = self.pos_ids[:, t**2:(t+1)**2]
         logits, past = self.transformer.forward_with_past(
                             padded, pos_ids, past, past_length=t**2, eh=text_hidden, 
                             embeddings=context if t==0 else None)
+
+        # classifier-free guidance
+        if _lambda > 0:
+            un_logits, un_past = self.transformer.forward_with_past(
+                                padded, pos_ids, un_past, past_length=t**2, 
+                                eh=self.dummy_text_hidden.expand(text_hidden.shape[0], -1, -1),
+                                embeddings=un_context if t==0 else None) 
+            logits = un_logits + _lambda * (logits - un_logits)
+            
         assert logits.shape[1] == 2*t+1
         pred_ids, _ =  self.process_logits(logits, t, top_k, top_p, temperature, greedy)
-        return pred_ids, past
+        return pred_ids, past, un_past
 
     @torch.no_grad()
     def sample(self, text_idx,
-               top_k=None, top_p=0.8, temperature=1.0, greedy=False, 
-               return_feature=False, use_cache=False):
+               top_k=512, top_p=0.8, temperature=1.0, _lambda=0.0, 
+               greedy=False, return_feature=False, use_cache=False):
         # sample a token map from given text tokens
         assert not self.transformer.training
         batch_size = text_idx.shape[0]
         pad_idx = (torch.ones(batch_size, 1)*self.pad_id).to(text_idx)
-        text_feature, text_hidden = self.text_encoder(text_idx)
-        context, _ = self.get_context(text_feature)
         Ltoken = torch.empty((batch_size, 0), dtype=torch.long, device=text_idx.device)
         padded = torch.empty((batch_size, 0), dtype=torch.long, device=text_idx.device)
-
+        text_feature, text_hidden = self.text_encoder(text_idx)
+        context, _, w = self.get_context(text_feature)
+        
         # Prepare past if use cache
         if use_cache:
             config = self.transformer.config
             past_shape = [config.n_layer, 2, batch_size, \
                 config.n_head, config.block_size, config.n_embd//config.n_head]
             past = torch.empty(past_shape, dtype=text_hidden.dtype, device=text_hidden.device)
+            if _lambda > 0:
+                padded_fea = self.dummy_text_fea.expand(text_hidden.shape[0], -1)
+                uncontext = self.linear_ctx(torch.cat((padded_fea, w), dim=1)).unsqueeze(1)
+                un_past = torch.empty(past_shape, dtype=text_hidden.dtype, device=text_hidden.device)
 
         for t in range(self.css):
             if use_cache:
-                pred_ids, past = self.cached_single_step(
-                                    text_hidden, padded, t, past, context,
-                                    top_k, top_p, temperature, greedy)
+                pred_ids, past, un_past = self.cached_single_step(
+                                                text_hidden, padded, t, past, context,
+                                                top_k, top_p, temperature, greedy, _lambda,
+                                                un_past if _lambda > 0 else None,
+                                                uncontext if _lambda > 0 else None)
                 Ltoken = torch.cat((Ltoken, pred_ids), dim=1)
                 if t < self.css-1: # No need to cat at last step
                     padded = torch.cat((pad_idx, pred_ids, pad_idx), dim=1)
@@ -195,7 +211,7 @@ class CrossLformer(Lformer):
         return CE, None
         
     def get_context(self, text_feature):
-        return self.linear_ctx(text_feature).unsqueeze(1), None # [B,H]
+        return self.linear_ctx(text_feature).unsqueeze(1), None, None # [B,H]
 
     def forward(self, text_feature, text_hidden, padded):
         seq_len = padded.shape[1] + 1 # add one for text_feature
@@ -231,6 +247,7 @@ class CrossLformerLatent(Lformer):
                  pkeep=1.0,
                  ckpt_path=None,
                  ignore_keys=[],
+                 text_drop=0.0
                  ):
         super().__init__(css,
                          transformer_config,
@@ -239,6 +256,7 @@ class CrossLformerLatent(Lformer):
                          pkeep
                          )
 
+        self.text_drop = text_drop
         hs_cond = transformer_config.params.dim_cond
         hs_trans = transformer_config.params.n_embd
         self.linear_mu_c = nn.Linear(hs_cond, hs_cond)
@@ -249,6 +267,11 @@ class CrossLformerLatent(Lformer):
         for _ in range(w_layer):
             layers.extend([nn.Linear(hs_cond, hs_cond), nn.LeakyReLU(inplace=True)])
         self.latent_to_w = nn.Sequential(*layers)
+
+        dummy_text = torch.ones((1, 77), dtype=torch.long) * self.pad_id
+        dummy_text_fea, dummy_text_hidden = self.text_encoder(dummy_text)
+        self.register_buffer("dummy_text_fea", dummy_text_fea)
+        self.register_buffer("dummy_text_hidden", dummy_text_hidden)
 
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
@@ -271,6 +294,10 @@ class CrossLformerLatent(Lformer):
 
     def shared_step(self, batch, batch_idx):
         text_idx, Ltoken, _, img_feature = self.get_input(batch)
+        if self.training and self.text_drop > 0:
+            mask = torch.bernoulli((1 - self.text_drop) * torch.ones(text_idx.shape[0]))
+            mask = mask.long().to(text_idx.device).unsqueeze(-1)
+            text_idx = mask*text_idx + (1-mask)*(torch.ones_like(text_idx)*self.pad_id)
         text_feature, text_hidden = self.text_encoder(text_idx)
         padded = self.pad_Ltoken(Ltoken)
         logits, KLD = self(text_feature, text_hidden, padded, img_feature)
@@ -290,10 +317,10 @@ class CrossLformerLatent(Lformer):
             z = self.reparameterize(mu_c, torch.zeros_like(mu_c))
         w = self.latent_to_w(z)
         context = self.linear_ctx(torch.cat((text_feature, w), dim=1)).unsqueeze(1) # [B,1,H]
-        return context, KLD
+        return context, KLD, w
 
     def forward(self, text_feature, text_hidden, padded, img_feature=None):
-        context, KLD = self.get_context(text_feature, img_feature)
+        context, KLD, _ = self.get_context(text_feature, img_feature)
 
         seq_len = padded.shape[1] + 1
         att_mask = self.att_mask[:, :seq_len, :seq_len]

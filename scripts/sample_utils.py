@@ -51,6 +51,7 @@ def get_parser():
     parser.add_argument("--cache", type=str2bool, default=True, help="whether to use cache")
     parser.add_argument("--top_k", type=int, default=512, help="probability truncate")       
     parser.add_argument("--top_p", type=float, default=0.85, help="nucleus sampling")
+    parser.add_argument("--lambda_", type=float, default=0.0, help="classifier free weight")
     parser.add_argument("--eval", type=str2bool, default=True, help="eval for sample.py")                    
 
     parser.add_argument("-b", "--base", nargs="*", metavar="base_config.yaml",
@@ -75,7 +76,7 @@ class SamplerWithCLIP(torch.nn.Module):
         self.preprocess = T.Compose([T.ToPILImage(), preprocess])
 
     def forward(self, text_idx, num_s=1, candidate=32, fbs=32, 
-                 top_k=None, top_p=0.9, temperature=1.0, use_cache=True):
+                 top_k=512, top_p=0.8, temperature=1.0, lambda_=0.0, use_cache=True):
         batch_size = text_idx.shape[0]
         fbs = min(candidate, fbs)
         if batch_size > 1:
@@ -88,13 +89,13 @@ class SamplerWithCLIP(torch.nn.Module):
             for t in range(candidate // fbs):
                 ex_text = text_idx.expand(fbs, -1) # repeat text  [B, L] 
                 img_idx[fbs*t:fbs*(t+1), :], text_feature = \
-                    self.model.sample(ex_text, top_k, top_p, temperature, 
-                        return_feature=True, use_cache=use_cache)
+                    self.model.sample(ex_text, top_k, top_p, temperature, lambda_,
+                                      return_feature=True, use_cache=use_cache)
         else:
             # [B*cdt, L] ,repeat each text to cdt
             ex_text = text_idx[:,None,:].repeat(1, candidate, 1).view(-1, text_idx.shape[-1])
             img_idx[...], text_feature = \
-                self.model.sample(ex_text, top_k, top_p, temperature, 
+                self.model.sample(ex_text, top_k, top_p, temperature, lambda_,
                                   return_feature=True, use_cache=use_cache)
      
         img_t = self.model.decode_to_img(img_idx) # [B,C,H,W]

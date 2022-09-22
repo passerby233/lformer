@@ -1,21 +1,19 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 40000
+  max_steps: 10000
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 40000
+    total_steps: 10000
     pct_start: 0.02
-  target: taming.models.crosslformer.CrossLformerLatent
+  target: taming.models.AR.TrecARModel
   params:
-    css: 32
-    w_layer: 12
+    css: 16
     transformer_config:
-      target: taming.modules.transformer.sparse.SparseGPT
+      target: taming.modules.transformer.sandwich.GPT
       params:
-        dim_cond: 512 # num of dimensions of condition hidden
-        block_size: 1024
-        text_vbs: 0
+        block_size: 333  # = 1024 + 77
+        text_vbs: 49408
         img_vbs: 1024
         n_layer: 24
         n_head: 16
@@ -23,21 +21,13 @@ model:
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
-        add_cross: True
-        full_head: False
-        PBrelax: True
-        checkpoint: 0
-    text_encoder_config:
-      target: taming.models.custom_clip.TextEncoder
-      params: 
-        ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
-        freeze: True
-        
+        add_cross: False
+        full_head: True
     # taming VQGAN CelebA
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/faces/celeba_f8.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/faces/celeba_f16.ckpt
         embed_dim: 256
         n_embed: 1024
         ddconfig:
@@ -47,9 +37,9 @@ model:
           in_channels: 3
           out_ch: 3
           ch: 128
-          ch_mult: [1,1,2,4]
+          ch_mult: [1,1,2,2,4]
           num_res_blocks: 2
-          attn_resolutions: [32]
+          attn_resolutions: [16]
           dropout: 0.0
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
@@ -57,23 +47,21 @@ model:
 data: #CelebA
   target: taming.data.utils.DataModuleFromConfig
   params:
-    batch_size: 16
+    batch_size: 32
     num_workers: 8
     train:
-      target: taming.data.celeba.CelebAFeature
+      target: taming.data.celeba.CelebA
       params:
         split: train
         img_size: 288
         crop_size: 256
         img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
         meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /cache/CelebAMask-HQ/feature_celeba_clip_train.pkl
     validation:
-      target: taming.data.celeba.CelebAFeature
+      target: taming.data.celeba.CelebA
       params:
         split: test
         img_size: 288
         crop_size: 256
         img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
         meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /cache/CelebAMask-HQ/feature_celeba_clip_val.pkl

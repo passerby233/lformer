@@ -1,10 +1,10 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 40000
+  max_steps: 20000
   scheduler_params:
     type: OneCycle
     max_lr: 1.0e-4
-    total_steps: 40000
+    total_steps: 20000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
