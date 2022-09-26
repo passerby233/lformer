@@ -1,0 +1,28 @@
+data: #LAION
+  target: taming.data.utils.DataModuleFromConfig
+  params:
+    batch_size: 128
+    num_workers: 16
+    train:
+      target: taming.data.laion.LAION
+      params:
+        split: train
+        img_size: 256
+        crop_size: 224
+        mean: [0.48145466, 0.4578275, 0.40821073]
+        std: [0.26862954, 0.26130258, 0.27577711]
+        img_root: /home/ma-user/work/dataset # EFS
+        meta: /cache/mm_en_filename_caption.lmdb
+        tokenize: False
+    # validation:
+    #   target: taming.data.coco.COCO
+    #   params:
+    #     split: test
+    #     img_size: 256
+    #     crop_size: 224
+    #     mean: [0.48145466, 0.4578275, 0.40821073]
+    #     std: [0.26862954, 0.26130258, 0.27577711]
+    #     img_root: /cache/cc3m/val2017
+
+clip_ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
+save_prefix: /home/ma-user/work/zhanzongyuan/feature_laion_clip # feature_laion_clip/XXX.pkl

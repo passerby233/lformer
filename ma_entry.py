@@ -154,6 +154,11 @@ def main():
         for zipfile in ['val.tar', 'train.tar']:
             download_and_release(source_dir, target_dir, zipfile)
         print(os.listdir(target_dir))
+    elif 'laion' in args.base:
+            source_dir = 's3://bucket-3690/zhanzongyuan/Datasets/laion/mm_en_filename_caption.lmdb'
+            target_dir = '/cache/mm_en_filename_caption.lmdb/'
+            download(source_dir, target_dir)
+            print(os.listdir(target_dir))
 
     # wait for all node sync
     if 'cub' not in args.base:
