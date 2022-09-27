@@ -100,6 +100,6 @@ if __name__ == "__main__":
         sample_for_eval(sampler, dataloader, args)
         del sampler
         torch.cuda.empty_cache()
-        #os.system(f"python scripts/eval.py --path2={args.out} --gpus=0")
+        os.system(f"python eval/fid_score.py --path2={args.out} --gpu=0")
     else:
         test_sample(sampler, dataloader, args)

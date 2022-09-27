@@ -82,5 +82,5 @@ data: #LAION
       params:
         split: test
         img_root: /cache/cc3m/val2017
-        meta: /cache/cc3m/metadata_coco_val.pkl
-        fea: /cache/cc3m/feature_cc3m_clip_val.pkl
+        meta: /home/ma-user/work/lijiacheng/cc3m/metadata_coco_val.pkl
+        fea: /home/ma-user/work/lijiacheng/cc3m/feature_cc3m_clip_val.pkl

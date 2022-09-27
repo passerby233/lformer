@@ -12,7 +12,7 @@ from third_party.clip.clip import CLIPTokenizer
 
 class LAION(Dataset):
     def __init__(self, img_root=None, meta=None,
-                img_size=288, crop_size=256,
+                img_size=256, crop_size=256,
                 mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
                 split='train', tokenize=True):
         super().__init__()

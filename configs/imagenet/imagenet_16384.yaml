@@ -1,10 +1,10 @@
 model:
   base_learning_rate: 1.0e-6
-  max_steps: 100000
+  max_steps: 300000
   scheduler_params:
     type: OneCycle
-    max_lr: 1.0e-4
-    total_steps: 100000
+    max_lr: 2.0e-4
+    total_steps: 300000
     pct_start: 0.02
   target: taming.models.lformer.LformerLatent
   params:

@@ -212,8 +212,10 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
         f = np.load(path)
         m, s = f['mu'][:], f['sigma'][:]
         f.close()
+        print(f"Loaded from {path}")
 
     else:
+        print(f"Loading Dataset from {path}")
         dataset = img_data.Dataset(path, transforms.Compose([
             transforms.Resize((299, 299)),
             transforms.ToTensor(),
@@ -237,6 +239,7 @@ def calculate_fid_given_paths(paths, batch_size, cuda, dims):
 
     m1, s1 = _compute_statistics_of_path(paths[0], model, batch_size, dims, cuda)
     m2, s2 = _compute_statistics_of_path(paths[1], model, batch_size, dims, cuda)
+    print("Got (m1, s1, m2, s2), Calculating FID")
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
     del model
     torch.cuda.empty_cache()

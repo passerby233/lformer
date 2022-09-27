@@ -25,13 +25,10 @@ class Dataset(data.Dataset):
         return img
 
     def get_filenames(self, data_path):
-        images = []
-        for path, subdirs, files in os.walk(data_path):
-            for name in files:
-                if name.rfind('jpg') != -1 or name.rfind('png') != -1:
-                    filename = os.path.join(path, name)
-                    if os.path.isfile(filename):
-                        images.append(filename)
+        def is_image_file(filename):
+            if filename.rfind('jpg') != -1 or filename.rfind('png') != -1:
+                return True
+        images = [os.path.join(data_path, x) for x in os.listdir(data_path) if is_image_file(x)]
         return images
 
 

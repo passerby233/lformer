@@ -155,10 +155,10 @@ def main():
             download_and_release(source_dir, target_dir, zipfile)
         print(os.listdir(target_dir))
     elif 'laion' in args.base:
-            source_dir = 's3://bucket-3690/zhanzongyuan/Datasets/laion/mm_en_filename_caption.lmdb'
-            target_dir = '/cache/mm_en_filename_caption.lmdb/'
-            download(source_dir, target_dir)
-            print(os.listdir(target_dir))
+        source_dir = 's3://bucket-3690/zhanzongyuan/Datasets/laion/mm_en_filename_caption.lmdb'
+        target_dir = '/cache/mm_en_filename_caption.lmdb/'
+        download(source_dir, target_dir)
+        download_and_release("s3://bucket-3947/lijiacheng/datasets/cc3m/", "/cache/cc3m/", 'val2017.zip')
 
     # wait for all node sync
     if 'cub' not in args.base:
