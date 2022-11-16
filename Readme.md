@@ -7,6 +7,8 @@ Jiacheng Li, Longhui Wei, ZongYuan Zhan, Xin He, Siliang Tang, Qi Tian, Yueting 
 Lformer is semi-autoregressive text-to-image generation model. It is trained on 256×256 images from a subset of LAION 400M dataset. This model uses a frozen CLIP ViT-B/16 text encoder to condition the model on text prompts. 
 The 1B model consists of a 63M text encoder, a 69M VQGAN, and a 918M generative transformer. It can generate 16 images in 9s with a V100 GPU.
 
+![cases](assets/lformer.png)
+Lformer firstly encodes an image into h×h discrete tokens, then divides them into h mirrored L-shape blocks from the top left to the bottom right and decodes the tokens in a block parallelly in each step. Lformer predicts the area adjacent to the previous context like autoregressive models thus it is more stable while accelerating. By making full use of the 2D structure of image tokens, Lformer has a faster speed and better generation performance than the existing  non-autoregressive methods.
 ## Requirements
 Create and activate the enrionment:
 ```
