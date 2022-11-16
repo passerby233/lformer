@@ -9,7 +9,7 @@ class ImageNet(Dataset):
     def __init__(self, img_root=None, meta=None,
                 img_size=256, crop_size=256,
                 mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
-                split='train'):
+                split='test'):
         super().__init__()
 
         with open(meta, 'rb') as f:

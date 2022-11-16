@@ -65,3 +65,4 @@ data: #CelebA
         crop_size: 256
         img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
         meta: /cache/CelebAMask-HQ/metadata.pkl
+        fea: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/feature_celeba_clip_val.pkl

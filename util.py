@@ -250,6 +250,7 @@ def get_modelckpt_cfg(lightning_config, ckptdir):
             "verbose": True,
             "save_last": True,
             "every_n_epochs": 10,
+            #"every_n_train_steps": ,
             #"save_top_k": -1
         }
     }

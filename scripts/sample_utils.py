@@ -43,16 +43,17 @@ def get_parser():
     parser.add_argument("--gpu", type=str2bool, default=True, help="whether to use gpu")
     parser.add_argument("--bs", type=int, default=1, help="batch_size")
     parser.add_argument("--num_s", type=int, default=1, help="num_of_sample_for_each_text")
-    parser.add_argument("--cdt", type=int, default=32, help="num_of_candidate")
-    parser.add_argument("--fbs", type=int, default=32, help="num_of_forward_batch_size_per_step")
+    parser.add_argument("--cdt", type=int, default=16, help="num_of_candidate")
+    parser.add_argument("--fbs", type=int, default=16, help="num_of_forward_batch_size_per_step")
     parser.add_argument("--out", type=str, default="/home/ma-user/work/lijiacheng/logs/sample/", 
                         help="img_output_path")
-    parser.add_argument("--num_a", type=int, default=30500, help="num_of_all_samples_for_eval")
+    parser.add_argument("--num_a", type=int, default=30000, help="num_of_all_samples_for_eval")
     parser.add_argument("--cache", type=str2bool, default=True, help="whether to use cache")
     parser.add_argument("--top_k", type=int, default=512, help="probability truncate")       
     parser.add_argument("--top_p", type=float, default=0.85, help="nucleus sampling")
     parser.add_argument("--lambda_", type=float, default=0.0, help="classifier free weight")
-    parser.add_argument("--eval", type=str2bool, default=True, help="eval for sample.py")                    
+    parser.add_argument("--eval", type=str2bool, default=True, help="eval for sample.py")
+    parser.add_argument("--ar", type=str2bool, default=False, help="AR model for sample.py")                     
 
     parser.add_argument("-b", "--base", nargs="*", metavar="base_config.yaml",
         help="paths to base configs. Loaded from left-to-right. "
@@ -76,42 +77,58 @@ class SamplerWithCLIP(torch.nn.Module):
         self.preprocess = T.Compose([T.ToPILImage(), preprocess])
 
     def forward(self, text_idx, num_s=1, candidate=32, fbs=32, 
-                 top_k=512, top_p=0.8, temperature=1.0, lambda_=0.0, use_cache=True):
+                 top_k=512, top_p=0.8, temperature=1.0, 
+                 lambda_=0.0, use_cache=True, ar=False):
         batch_size = text_idx.shape[0]
         fbs = min(candidate, fbs)
         if batch_size > 1:
             assert candidate == fbs, "batch_size > 1, assert memory is enough"
         assert candidate % fbs == 0, f"candidate % fbs should be 0"
-        img_idx = torch.empty((batch_size*candidate, self.model.block_size), 
+        img_idx = torch.empty((batch_size*candidate, self.model.css**2), 
                                 dtype=text_idx.dtype, device=text_idx.device)
-
         if batch_size == 1:
             for t in range(candidate // fbs):
                 ex_text = text_idx.expand(fbs, -1) # repeat text  [B, L] 
-                img_idx[fbs*t:fbs*(t+1), :], text_feature = \
-                    self.model.sample(ex_text, top_k, top_p, temperature, lambda_,
-                                      return_feature=True, use_cache=use_cache)
+                if ar:
+                    img_idx[fbs*t:fbs*(t+1), :] = self.model.sample(
+                        ex_text, top_k, top_p, temperature, use_cache=use_cache)
+                else:
+                    img_idx[fbs*t:fbs*(t+1), :], text_feature = \
+                        self.model.sample(ex_text, top_k, top_p, temperature, lambda_,
+                                        return_feature=True, use_cache=use_cache)
         else:
             # [B*cdt, L] ,repeat each text to cdt
             ex_text = text_idx[:,None,:].repeat(1, candidate, 1).view(-1, text_idx.shape[-1])
-            img_idx[...], text_feature = \
-                self.model.sample(ex_text, top_k, top_p, temperature, lambda_,
-                                  return_feature=True, use_cache=use_cache)
+            if ar:
+                img_idx[...] = self.model.sample(ex_text, top_k, top_p, temperature, 
+                                                use_cache=use_cache)
+            else:
+                img_idx[...], text_feature = \
+                    self.model.sample(ex_text, top_k, top_p, temperature, lambda_,
+                                    return_feature=True, use_cache=use_cache)
      
         img_t = self.model.decode_to_img(img_idx) # [B,C,H,W]
         img_processed = torch.stack(
             [self.preprocess(s_img_t) for s_img_t in img_t]).to(text_idx.device)
-        
+
         image_list = []
         img_t = img_t.view(batch_size, candidate, *img_t.shape[-3:])
         img_processed = img_processed.view(batch_size, candidate, *img_processed.shape[-3:])
-        text_feature = text_feature.view(batch_size, -1, text_feature.shape[-1])
+        if ar:
+            ex_text = ex_text.view(batch_size, -1, ex_text.shape[-1])
+        else:
+            text_feature = text_feature.view(batch_size, -1, text_feature.shape[-1])
+
         for batch_idx in range(batch_size):
             s_img_t = img_t[batch_idx]
             s_img_processed = img_processed[batch_idx]
-            s_text_feature = text_feature[batch_idx, :1]
-            logits_per_image, logits_per_text = self.ranker.clip_score(s_img_processed, s_text_feature)
-            value, index = logits_per_text.squeeze().topk(num_s)
+            if ar:
+                s_text_idx = ex_text[batch_idx, :1]
+                logits_per_image, logits_per_text = self.ranker(s_img_processed, s_text_idx)    
+            else:
+                s_text_feature = text_feature[batch_idx, :1]
+                logits_per_image, logits_per_text = self.ranker.clip_score(s_img_processed, s_text_feature)
+            value, index = logits_per_text.squeeze(0).topk(num_s)
             image_list.append(s_img_t[index])
         image_sample = torch.cat(image_list, 0)
         return image_sample

@@ -93,7 +93,7 @@ class ARModel(GenModel):
         if use_cache:
             config = self.transformer.config
             past_shape = [config.n_layer, 2, text_idx.shape[0], \
-                config.n_head, config.block_size, config.n_embd//config.n_head]
+                config.n_head, self.css**2, config.n_embd//config.n_head]
             past = torch.empty(past_shape, dtype=self.dtype, device=text_idx.device)
 
         for k in range(steps):

@@ -25,7 +25,7 @@ class WrappedDataset(Dataset):
     def __init__(self, img_root=None, meta=None, fea=None,
                 img_size=288, crop_size=256,
                 mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
-                split='train'):
+                split='test'):
         super().__init__()
         print(f"Loading from {meta} {os.path.getsize(meta)//1024}")
         with open(meta, 'rb') as f:

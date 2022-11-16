@@ -11,6 +11,7 @@ from PIL import Image
 from sample_utils import get_parser, get_config, save_text, load_model
 from sample_utils import SamplerWithCLIP
 from taming.models.custom_clip import clip_transform, VisualEncoder
+from third_party.clip import clip
 from util import instantiate_from_config
 
 def test_sample(sampler, dataloader, args):
@@ -27,7 +28,7 @@ def test_sample(sampler, dataloader, args):
         print(f"Sampling for batch {i}")
         start_time = time.time()
         image_sample = sampler(batch_text_idx, args.num_s, args.cdt, args.fbs,
-                                args.top_k, args.top_p, lambda_=args.lambda_).detach().cpu()
+                                args.top_k, args.top_p, lambda_=args.lambda_, ar=args.ar).detach().cpu()
         print(f"batch_{i} uses time: {time.time() - start_time}s")
         
         img_path = os.path.join(args.out, f"imgs_batch_{i}.png")
@@ -46,11 +47,12 @@ def sample_for_eval(sampler, dataloader, args):
     else:
         tokenizer = sampler.model.tokenizer
 
+    meta = []
     start = time.time()
     for batch_idx, batch in enumerate(dataloader):
         batch_text_idx = batch['text_idx'].to(device)
         image_sample = sampler(batch_text_idx, args.num_s, args.cdt, args.fbs,
-                               args.top_k, args.top_p, lambda_=args.lambda_).detach().cpu()
+                               args.top_k, args.top_p, lambda_=args.lambda_, ar=args.ar).detach().cpu()
         image_batch = image_sample.mul(255).add_(0.5).clamp_(0, 255).permute(0, 2, 3, 1).to(torch.uint8)
         for local_idx, img_t in enumerate(image_batch):
             global_idx = batch_idx * args.bs + local_idx
@@ -59,8 +61,10 @@ def sample_for_eval(sampler, dataloader, args):
             caption = tokenizer.decode(batch_text_idx[local_idx].detach().cpu().numpy())
             caption = caption.strip('<|startoftext|>').rstrip('<|endoftext|>')
             caption = caption.replace('/', ' ')
-            imgpath = os.path.join(args.out, f"{caption[:200]}.png")
-            Image.fromarray(img_t.numpy()).save(imgpath)
+            filename = f"{global_idx}.png"
+            meta.append((filename, caption))
+            savepath = os.path.join(args.out, filename)
+            Image.fromarray(img_t.numpy()).save(savepath)
             print(f"Image {global_idx} Generated.")
         if global_idx >= args.num_a:
             break
@@ -81,7 +85,10 @@ if __name__ == "__main__":
     # Wrap CLIP model for ranking
     clip_ckpt_path = "/home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt"
     print(f"Restored from {clip_ckpt_path}")
-    ranker = VisualEncoder(clip_ckpt_path)
+    if not args.ar:
+        ranker = VisualEncoder(clip_ckpt_path)
+    else:
+        ranker, _ = clip.load(clip_ckpt_path, device="cpu")
     sampler = SamplerWithCLIP(model, ranker, clip_transform)
     sampler = nn.DataParallel(sampler)
     if args.gpu:
@@ -100,6 +107,6 @@ if __name__ == "__main__":
         sample_for_eval(sampler, dataloader, args)
         del sampler
         torch.cuda.empty_cache()
-        os.system(f"python eval/fid_score.py --path2={args.out} --gpu=0")
+        #os.system(f"python eval/fid_score.py --path2={args.out} --gpu=0")
     else:
         test_sample(sampler, dataloader, args)

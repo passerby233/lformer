@@ -17,8 +17,8 @@ model:
         block_size: 256
         text_vbs: 0
         img_vbs: 1024
-        n_layer: 40
-        n_head: 8
+        n_layer: 19
+        n_head: 16
         n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1

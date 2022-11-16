@@ -75,7 +75,7 @@ class Lformer(GenModel, LformerBase):
         if use_cache:
             config = self.transformer.config
             past_shape = [config.n_layer, 2, batch_size, \
-                config.n_head, config.block_size, config.n_embd//config.n_head]
+                config.n_head, self.css**2, config.n_embd//config.n_head]
             past = torch.empty(past_shape, dtype=text_hidden.dtype, device=text_hidden.device)
             if _lambda > 0:
                 padded_fea = self.dummy_text_fea.expand(text_hidden.shape[0], -1)

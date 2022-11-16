@@ -53,7 +53,7 @@ model:
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
 
-data: #CC3M
+data:
   target: taming.data.utils.DataModuleFromConfig
   params:
     batch_size: 12

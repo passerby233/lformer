@@ -43,7 +43,7 @@ import torchvision.transforms as transforms
 from inception import InceptionV3
 from inception_score import inception_score
 import torch.utils.data
-import img_data
+from img_data import IndexedSet
 from tqdm import tqdm
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -59,7 +59,7 @@ parser.add_argument('--dims', type=int, default=2048,
 parser.add_argument('-c', '--gpu', default='0', type=str,
                     help='GPU to use (leave blank for CPU only)')
 parser.add_argument('--path1', type=str, default="/home/ma-user/work/lijiacheng/data/coco/mean_sigma_coco_val2014.npz")
-parser.add_argument('--path2', type=str, default=64)
+parser.add_argument('--path2', type=str, default="")
 
 def get_activations(images, model, batch_size=256, dims=2048, cuda=False, verbose=True):
     """Calculates the activations of the pool_3 layer for all images.
@@ -216,13 +216,14 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
 
     else:
         print(f"Loading Dataset from {path}")
-        dataset = img_data.Dataset(path, transforms.Compose([
+        dataset = IndexedSet(path, transforms.Compose([
             transforms.Resize((299, 299)),
             transforms.ToTensor(),
         ]))
         print(f"length of {path}={len(dataset)}")
         dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=16)
         m, s = calculate_activation_statistics(dataloader, model, batch_size, dims, cuda)
+        #breakpoint()
         #np.savez("eval/mean_sigma_coco_val2014.npz", mu=m, sigma=s)
     return m, s
 
@@ -265,15 +266,16 @@ if __name__ == '__main__':
     print('FID: ', fid_value)
 
     # Calculate IS Score
-    imgs = img_data.Dataset(args.path2, transforms.Compose([
+    """
+    imgs = IndexedSet(args.path2, transforms.Compose([
         transforms.Resize((299, 299)),
         transforms.ToTensor(),
     ]))
     is_value = inception_score(imgs)
     print("IS_Score", is_value)
-
+    """
     # Calculate CLIP Score
-    torch.cuda.empty_cache()
-    os.system(f"python eval/clip_score.py --path2={args.path2}")
+    # torch.cuda.empty_cache()
+    # os.system(f"python eval/clip_score.py --path2={args.path2}")
 
 

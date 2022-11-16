@@ -1,44 +1,44 @@
 model:
-  base_learning_rate: 1.0e-6
-  max_steps: 10000
+  base_learning_rate: 1.0e-06 # no_effect wit OneCycle
+  max_steps: 200000 # 50K steps budget
   scheduler_params:
     type: OneCycle
-    max_lr: 1.0e-4
-    total_steps: 10000
+    max_lr: 2.0e-4
+    total_steps: 200000
     pct_start: 0.02
   target: taming.models.crosslformer.CrossLformerLatent
   params:
     css: 16
     w_layer: 12
+    text_drop: 0.1
     transformer_config:
-      target: taming.modules.transformer.sandwich.GPT
+      target: taming.modules.transformer.sparse.SparseGPT
       params:
         dim_cond: 512 # num of dimensions of condition hidden
-        block_size: 1024
+        block_size: 256
         text_vbs: 0
-        img_vbs: 1024
-        n_layer: 19
-        n_head: 16
+        img_vbs: 8192
+        n_layer: 24
+        n_head: 8
         n_embd: 1024
         embd_pdrop: 0.1
         resid_pdrop: 0.1
         attn_pdrop: 0.1
-        add_cross: True
         full_head: False
-        PBrelax: False
+        add_cross: True # Add cross attention
+        PBrelax: True # To keep stable for >24 layers if on
     text_encoder_config:
       target: taming.models.custom_clip.TextEncoder
       params: 
         ckpt_path: /home/ma-user/work/lijiacheng/pretrained/ViT-B-16.pt
-        freeze: True
         
     # taming VQGAN CelebA
     first_stage_config:
       target: taming.models.vqgan.VQModel
       params:
-        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/faces/celeba_f16.ckpt
+        ckpt_path: /home/ma-user/work/lijiacheng/vqmodel/coco_epoch117.ckpt
         embed_dim: 256
-        n_embed: 1024
+        n_embed: 8192
         ddconfig:
           double_z: false
           z_channels: 256
@@ -53,26 +53,26 @@ model:
         lossconfig:
           target: third_party.losses.vqperceptual.DummyLoss
 
-data: #CelebA
+data:
   target: taming.data.utils.DataModuleFromConfig
   params:
     batch_size: 32
     num_workers: 8
     train:
-      target: taming.data.celeba.CelebAFeature
+      target: taming.data.coco.COCOFeature
       params:
         split: train
-        img_size: 288
+        img_size: 256
         crop_size: 256
-        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
-        meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/feature_celeba_clip_train.pkl
+        img_root: /cache/coco/train2017
+        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_train.pkl
+        fea: /home/ma-user/work/lijiacheng/data/coco/feature_coco_clip_train.pkl
     validation:
-      target: taming.data.celeba.CelebAFeature
+      target: taming.data.coco.COCOFeature
       params:
-        split: test
-        img_size: 288
+        img_size: 256
         crop_size: 256
-        img_root: /cache/CelebAMask-HQ/CelebA-HQ-img
-        meta: /cache/CelebAMask-HQ/metadata.pkl
-        fea: /home/ma-user/work/lijiacheng/data/CelebAMask-HQ/feature_celeba_clip_val.pkl
+        split: test
+        img_root: /cache/coco/val2017
+        meta: /home/ma-user/work/lijiacheng/data/coco/metadata_coco_val.pkl
+        fea: /home/ma-user/work/lijiacheng/data/coco/feature_coco_clip_val.pkl

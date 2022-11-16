@@ -14,7 +14,7 @@ class LAION(Dataset):
     def __init__(self, img_root=None, meta=None,
                 img_size=256, crop_size=256,
                 mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
-                split='train', tokenize=True):
+                split='test', tokenize=True):
         super().__init__()
         # cap_path need to be prepared in ma_entry.py
         # cap_path = '/cache/mm_en_filename_caption.lmdb'
@@ -81,10 +81,10 @@ class LAIONFeature(LAION):
         self.fea = fea
         super().__init__(*arg, **kwargs)
 
-    def __getitem__(self, i):
-        example = super().__getitem__(i)
-        
+    def _get_example(self, example):
+        example = super()._get_example(example)
         hash_object = hashlib.sha1(example['img_path'].encode('utf-8'))
         hex_dig = hash_object.hexdigest()
-        example['feature'] = np.load(os.path.join(self.fea, hex_dig+f'.npy'));
+        example['feat_path'] = os.path.join(self.fea, hex_dig+f'.npy')
+        example['feature'] = np.load(example['feat_path'])
         return example

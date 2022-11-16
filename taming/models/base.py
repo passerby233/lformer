@@ -7,6 +7,17 @@ import pytorch_lightning as pl
 from util import instantiate_from_config
 from third_party.clip.clip import CLIPTokenizer
 
+def convert_ckpt(state_dict):
+    import re
+    pattern = re.compile(r'module.(.*)')
+    for key in list(state_dict.keys()):
+        res = pattern.match(key)
+        if res:
+            new_key = res.group(1)
+            state_dict[new_key] = state_dict[key]
+            del state_dict[key]
+    return state_dict
+    
 def disabled_train(self, mode=True):
     """Overwrite model.train with this function to make sure train/eval mode
     does not change anymore. 
@@ -33,7 +44,11 @@ class GenModel(pl.LightningModule):
         self.tokenizer = CLIPTokenizer()
 
     def init_from_ckpt(self, path, ignore_keys=list()):
-        sd = torch.load(path, map_location="cpu")["state_dict"]
+        ckpt_dict = torch.load(path, map_location="cpu")
+        if "state_dict" in ckpt_dict:
+            sd = ckpt_dict["state_dict"]
+        else:
+            sd = convert_ckpt(ckpt_dict) # a state_dict with module.param
         for k in sd.keys():
             for ik in ignore_keys:
                 if k.startswith(ik):

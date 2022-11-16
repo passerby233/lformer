@@ -9,9 +9,15 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
-from torchmetric import get_parser
-from torchmetric import Imageset
 from third_party.clip.clip import _transform, CLIPTokenizer
+from img_data import IndexedSet
+from argparse import ArgumentParser
+
+def get_parser():
+    parser = ArgumentParser()
+    parser.add_argument("--batch", type=int, default=256)
+    parser.add_argument("--path", type=str, help="path contains images")
+    parser.add_argument("--gpus", type=str, default="0", help="which gpus to use")
 
 if __name__ == "__main__":
     parser = get_parser()
@@ -19,7 +25,7 @@ if __name__ == "__main__":
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
 
     transform = _transform(224)
-    dataset = Imageset(args.path2, transform)
+    dataset = IndexedSet(args.path, transform, with_cap=True)
     dataloader = DataLoader(dataset=dataset, batch_size=args.batch, shuffle=False,
                             drop_last=False, num_workers=16, pin_memory=True)
     torch.manual_seed(23)

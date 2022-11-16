@@ -78,10 +78,10 @@ def run_conditional(sampler, dsets):
 
     temperature = st.sidebar.number_input("Temperature", value=1.0)
     top_k = st.sidebar.number_input("Top k", value=512)
-    top_p = st.sidebar.number_input("Top p", value=0.9)
-    candidate = st.sidebar.number_input("candidate", value=32)
-    fbs = st.sidebar.number_input("forward_batch_size", value=32)
-    num_out = st.sidebar.number_input("num_out", value=4)
+    top_p = st.sidebar.number_input("Top p", value=0.85)
+    candidate = st.sidebar.number_input("candidate", value=16)
+    fbs = st.sidebar.number_input("forward_batch_size", value=16)
+    num_out = st.sidebar.number_input("num_out", value=16)
     lambda_ = st.sidebar.number_input("lambda_", value=0.0)
     #greedy = st.checkbox("Greedy", value=False)
 

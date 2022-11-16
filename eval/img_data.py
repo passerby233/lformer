@@ -1,10 +1,10 @@
-import os
+import os, pickle
 import torch
-from torch.utils import data
+from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 from PIL import Image
 
-class Dataset(data.Dataset):
+class Rawdataset(Dataset):
     'Characterizes a dataset for PyTorch'
 
     def __init__(self, path, transform=None):
@@ -32,17 +32,38 @@ class Dataset(data.Dataset):
         return images
 
 
-if __name__ == '__main__':
-    path = "/media/twilightsnow/workspace/gan/AttnGAN/output/birds_attn2_2018_06_24_14_52_20/Model/netG_avg_epoch_300"
-    batch_size = 16
-    dataset = Dataset(path, transforms.Compose([
-        transforms.Resize(299),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ]))
-    print(dataset.__len__())
-    dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    for i, batch in enumerate(dataloader):
-        print(batch)
-        break
+class IndexedSet(Dataset):
+    def __init__(self, img_dir, transform=None, meta_path=None, with_cap=False):
+        super().__init__()
+        self.img_dir = img_dir
+        self.transform = transform
+        self.with_cap = with_cap
+        if meta_path is None:
+            meta_path = os.path.join(img_dir, 'meta.pkl')
+            if os.path.exists(meta_path):
+                with open(meta_path, 'rb') as f:
+                    self.meta = pickle.load(f)
+            else:
+                filenames = self.get_filenames(img_dir)
+                self.meta = [(filename, "") for filename in filenames]
+
+    def get_filenames(self, data_path):
+        def is_image_file(filename):
+            if filename.rfind('jpg') != -1 or filename.rfind('png') != -1:
+                return True
+        images = [os.path.join(data_path, x) for x in os.listdir(data_path) if is_image_file(x)]
+        return images
+
+    def __len__(self):
+        return len(self.meta)
+
+    def __getitem__(self, index):
+        filename, caption = self.meta[index]
+        img_path = os.path.join(self.img_dir, filename)
+        img = Image.open(img_path).convert('RGB')
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.with_cap:
+            return {'img': img, 'caption': caption}
+        else:
+            return img
